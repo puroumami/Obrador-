@@ -326,6 +326,9 @@ body.sin-anim .m-t,body.sin-anim .d-cab,body.sin-anim .d-kpis,body.sin-anim .d-h
 .r-st{display:grid;grid-template-columns:30px 1fr 30px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}.r-st button{border:0;background:#F3EBD0;min-height:40px;font-size:17px;color:var(--cacao)}
 .r-st output,.r-ent{display:grid;place-items:center;font-weight:700}.r-ent{min-height:40px;border-radius:12px;background:#E4E5C6}
 .t-dst{margin:-2px 0 6px;font-weight:600;color:#6E5B53}
+.sheet{overscroll-behavior:contain}.sheet .grip{touch-action:none;padding:6px 0 12px;margin-top:-6px}
+.o-tar{margin-bottom:12px}.o-falta{margin-bottom:10px;background:#F5D9A8!important}.o-falta .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.f2 .photo{min-height:150px;margin:0}.f2 .photo span{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px!important;text-align:center;font-size:13px}.f2 .photo b{font-size:13px}.f2 .photo img{max-height:180px;object-fit:cover}
 .sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug:empty{display:none}.sug .sg{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--mantequilla);color:var(--cacao);font:600 14px var(--f-body);cursor:pointer}.sug .sg.otro{background:var(--surface);color:var(--muted)}
 .al-si .al-d{display:block;font-weight:600;font-size:11px;color:var(--muted)}
 .al-comun{background:var(--cacao);color:var(--crema);border-radius:16px;padding:12px 14px;margin:4px 0 12px}.al-comun b{font:700 17px/1.2 var(--f-display)}
@@ -3285,6 +3288,78 @@ const avisos5=avisos;
 avisos=function(){const A=avisos5();if(enInsp()||esInv())return A;const n=huevosKg().length;if(n)A.push({k:'warn',t:n+(n===1?' entrada de huevos está':' entradas de huevos están')+' en kilos',s:'Pásalas a unidades (número de huevos)',hv:1,b:'Pasar'});return A};
 const irAviso1=irAviso;irAviso=function(d){if(d.hv){closeSheet();huevosSheet();return}return irAviso1(d)};
 const verAvisos1=verAvisos;verAvisos=function(){verAvisos1();const A=avisos();$$('#sheet [data-act="av-go"]').forEach((b,i)=>{const a=A[i];if(a&&a.hv)b.dataset.hv='1'})};
+
+/* ===== Cerrar las ventanas deslizando hacia abajo (como en el iPhone) ===== */
+(function(){const sh=$('#sheet');if(!sh)return;let y0=0,t0=0,dy=0,arr=false,listo=false;
+  const campo=el=>el&&el.closest&&el.closest('input,select,textarea,[contenteditable],.c-cnt,.r-st,.step');
+  const poner=(y,anim)=>{sh.style.transition=anim?'transform .2s ease-out':'none';sh.style.transform=y?'translateY('+y+'px)':''};
+  sh.addEventListener('touchstart',e=>{if(e.touches.length!==1){listo=false;return}const tc=e.touches[0],enGrip=!!(e.target.closest&&e.target.closest('.grip'));
+    /* solo se arrastra si estás arriba del todo de la ventana (o tocando la rayita) y no en un campo */
+    listo=(enGrip||sh.scrollTop<=0)&&!(campo(e.target)&&!enGrip);arr=false;dy=0;y0=tc.clientY;t0=Date.now()},{passive:true});
+  sh.addEventListener('touchmove',e=>{if(!listo)return;const d=e.touches[0].clientY-y0;
+    if(!arr){if(d>8&&sh.scrollTop<=0)arr=true;else if(d<-4){listo=false;return}else return}
+    dy=Math.max(0,d);e.preventDefault();poner(dy,false)},{passive:false});
+  const fin=()=>{if(!arr){listo=false;return}const v=dy/Math.max(1,Date.now()-t0);arr=false;listo=false;
+    if(dy>110||(dy>50&&v>.5)){poner(sh.offsetHeight||600,true);setTimeout(()=>{closeSheet();poner(0,false)},190)}else poner(0,true)};
+  sh.addEventListener('touchend',fin);sh.addEventListener('touchcancel',fin);
+  $('#dlg').addEventListener('close',()=>poner(0,false))})();
+
+/* ===== Apuntar las tartas del día desde el Obrador y ver qué se descuenta del stock ===== */
+function gastoDe(cuenta){const G={},sinRec=[];Object.keys(cuenta).forEach(sid=>{const n=cuenta[sid]||0;if(!n)return;const r=recetaDe(sid);
+  if(!r||!(r.ings||[]).length){sinRec.push(sabNom(sid));return}r.ings.forEach(x=>{const u=x.ud==='ud'?'ud':'g';const k=x.ing+'|'+u;G[k]=(G[k]||0)+(+x.q||0)*n})});
+  return {G:G,sinRec:sinRec}}
+const guardarCuenta1=guardarCuenta;
+guardarCuenta=function(){const cuenta=Object.assign({},cnt),f=diaReg||today();guardarCuenta1();if(esInv()||!PRIV.datos)return;
+  const {G,sinRec}=gastoDe(cuenta),R=M.cfg.recuentos||{};
+  const partes=Object.keys(G).filter(k=>R[k.split('|')[0]]).map(k=>{const [ing,u]=k.split('|');return ing+' −'+fmtSt(G[k],u,ing)});
+  setTimeout(()=>{let t=partes.length?'Descontado: '+partes.join(', '):'';
+    if(sinRec.length)t+=(t?'. ':'')+'Sin receta (no descuenta): '+sinRec.join(', ');
+    else if(!partes.length&&Object.keys(G).length)t='Guardadas. Cuenta el stock en el Obrador para que empiece a descontar';
+    if(t)toast(t)},700)};
+/* en el Obrador: botón para apuntar y qué falta para que descuente bien */
+const vObrador1=vObrador;
+vObrador=function(){let h=vObrador1();if(esInv())return h;
+  const hoy=Object.values(M.t).filter(t=>t.fecha===today()).reduce((a,t)=>a+(+t.uds||0),0);
+  const btn='<button class="btn pri big o-tar" data-act="ob-tartas">'+(hoy?'Apuntar más tartas de hoy ('+hoy+' ya)':'Apuntar las tartas de hoy')+'</button>';
+  let falta='';if(PRIV.datos){const S=M.cfg.sabores||[],sin=S.filter(s=>!recetaDe(s.id)||!(recetaDe(s.id).ings||[]).length),usados={};
+    S.forEach(s=>{const r=recetaDe(s.id);(r&&r.ings||[]).forEach(x=>{usados[x.ing]=1})});const sinC=Object.keys(usados).filter(i=>!(M.cfg.recuentos||{})[i]);
+    if(sin.length||sinC.length)falta='<div class="card o-falta"><b>Para que descuente solo</b>'+
+      (sin.length?'<div class="row small"><span>Pon la receta de: '+esc(sin.map(s=>s.nombre).join(', '))+'</span><button class="btn sm" data-act="ob-recetas">Recetas</button></div>':'')+
+      (sinC.length?'<div class="row small"><span>Cuenta lo que tienes de: '+esc(sinC.join(', '))+'</span></div>':'')+'</div>'}
+  return btn+falta+h};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ob-tartas"]');if(!a)return;diaReg=today();tab='tartas';window.scrollTo(0,0);render()});
+
+/* ===== Entradas con dos fotos: una del nombre del producto y otra del lote ===== */
+let fotoNomPend=null;
+const formEntrada1=formEntrada;
+formEntrada=function(ing,edit,after){formEntrada1(ing,edit,after);const b=$('#ph-btn');if(!b)return;const e=edit||{},tok=uid();fotoNomPend={tok:tok,ing:ing,id:e.id||null,d:null};
+  b.insertAdjacentHTML('beforebegin','<div class="f2"><button type="button" class="photo f2-n" id="pn-btn"><span id="pn-txt">'+CAM+'<b>1 · Nombre del producto</b><small class="ph-sub">La etiqueta con la marca</small></span><img id="pn-img" hidden alt="Foto del nombre del producto"></button></div>');
+  const fl=$('#ph-txt');if(fl&&!fl.dataset.f2){fl.dataset.f2='1';fl.innerHTML=fl.innerHTML.replace('Foto del lote y la fecha','<b>2 · Lote y fecha</b>')}
+  $('.f2').appendChild(b);b.classList.add('f2-l');
+  const show=d=>{$('#pn-img').src=d;$('#pn-img').hidden=false;$('#pn-txt').innerHTML='<span class="again">Repetir</span>';$('#pn-btn').classList.add('has')};
+  if(e.fotoNom)getFoto('nom_'+e.id).then(d=>{if(d)show(d)});
+  $('#pn-btn').onclick=()=>{const inp=$('#ph-in');inp.value='';inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;
+    compress(f).then(d=>{if(!fotoNomPend||fotoNomPend.tok!==tok)return;fotoNomPend.d=d;show(d);if(iaOn()||CLOUD)leerNombre(d,f)}).catch(()=>toast('No se pudo usar esa foto'))};inp.click()}};
+/* la IA lee la marca de la foto del nombre (y el lote o la fecha si salen y aún no los tienes) */
+function leerNombre(d,f){const h=$('#en-hint');if(h){h.className='live warn';h.textContent='Leyendo el nombre…'}
+  const q=CLOUD?Promise.resolve(d):compress(f,1568,0.8).catch(()=>d);
+  q.then(x=>leerIA(x,'lote','La imagen es la etiqueta de una materia prima. Responde solo con JSON con las claves "lote", "caducidad" (YYYY-MM-DD) y "marca" (marca o fabricante). Usa null si no se lee. No inventes nada. Hoy es '+today()+'.')).then(r=>{const h=$('#en-hint');if(!h)return;
+    if(!r||typeof r!=='object'){h.className='hint';h.textContent='No se pudo leer el nombre. Escribe la marca.';return}
+    if(r.marca)poner('en-marca',String(r.marca).trim());if(r.lote&&!$('#en-lote').value)poner('en-lote',String(r.lote).toUpperCase().trim());if(isoOk(r.caducidad)&&!$('#en-c').value)poner('en-c',r.caducidad);
+    h.className='live okc';h.textContent=r.marca?'Leída la marca: '+r.marca+'. Ahora haz la foto del lote.':'Ahora haz la foto del lote.'}).catch(()=>{})}
+/* al guardar la entrada, se guarda también la foto del nombre */
+const saveRec2=saveRec;
+saveRec=function(kind,o){const P=fotoNomPend;if(kind==='e'&&P&&P.d&&o&&o.ing===P.ing&&(!P.id||P.id===o.id)){fotoNomPend=null;o=Object.assign({},o,{fotoNom:true});
+  return saveFoto('nom_'+o.id,P.d).then(()=>saveRec2(kind,o))}return saveRec2(kind,o)};
+$('#dlg').addEventListener('close',()=>{fotoNomPend=null});
+/* la foto del nombre sale también al ver la entrada y en el informe de Sanidad */
+const delRec2=delRec;delRec=function(kind,id){if(kind==='e'&&M.e[id]&&M.e[id].fotoNom)delFoto('nom_'+id);return delRec2(kind,id)};
+const crearInforme1=crearInforme;
+crearInforme=function(d,h,conFotos,conStats){return crearInforme1(d,h,conFotos,conStats).then(r=>{if(!conFotos)return r;
+  const E=Object.values(M.e).filter(e=>e.fotoNom&&e.fecha>=d&&e.fecha<=h);if(!E.length)return r;
+  return Promise.all(E.map(e=>fotoData('nom_'+e.id))).then(F=>{const figs=E.map((e,i)=>F[i]?'<figure><img src="'+F[i]+'" alt=""><figcaption>'+esc('Producto: '+e.ing+(e.marca?' · '+e.marca:'')+' · '+fdate(e.fecha))+'</figcaption></figure>':'').join('');
+    if(!figs)return r;let html=r.html;if(html.includes('<div class="fotos">'))html=html.replace('<div class="fotos">','<div class="fotos">'+figs);
+    else html=html.replace('</body>','<section class="anexo"><h2>Anexo: fotos</h2><div class="fotos">'+figs+'</div></section></body>');return Object.assign({},r,{html:html})})})};
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
