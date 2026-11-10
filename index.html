@@ -928,7 +928,7 @@ function ajustes(){
 
 /* ===== Navegación ===== */
 let tab=enInsp()?'inicio':(navigator.webdriver&&!window.__inicio)?'entradas':'menu';
-function render(){{const nv=tab!==window.__ultTab;window.__ultTab=tab;document.body.classList.toggle('sin-anim',!nv)}
+function render(){const nv=tab!==window.__ultTab;window.__ultTab=tab;document.body.classList.toggle('sin-anim',!nv);
   $('#hname').textContent=M.cfg&&M.cfg.negocio||'Mi Obrador';
   $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
   const v=$('#view');
@@ -936,7 +936,10 @@ function render(){{const nv=tab!==window.__ultTab;window.__ultTab=tab;document.b
   if(typeof recalcularStock==='function')recalcularStock();
   const dentro=true;document.body.classList.toggle('tema-d',dentro);document.documentElement.classList.toggle('tema-d',dentro);
   const cuerpo=tab==='menu'?vMenu():tab==='inicio'?vSanidad():tab==='pedidos'?vPedidos():tab==='obrador'?vObrador():tab==='conta'?vConta():tab==='entradas'?vEntradas():tab==='tartas'?vTartas():tab==='meses'?vMeses():tab==='docs'?vDocs():tab==='lotes'?vLotes():vCamara();
-  v.innerHTML=dentro&&typeof cabD==='function'?cabD(tab)+'<div class="d-hoja d-'+tab+'">'+cuerpo+'</div>':cuerpo;
+  const html=dentro&&typeof cabD==='function'?cabD(tab)+'<div class="d-hoja d-'+tab+'">'+cuerpo+'</div>':cuerpo;
+  /* si no ha cambiado nada (por ejemplo al sincronizar cada 20 s), no se toca la pantalla: así no parpadea */
+  if(!nv&&html===window.__ultHtml&&v.firstChild){updateBadges();pintarCabecera();return}
+  window.__ultHtml=html;v.innerHTML=html;
   fillThumbs(v);updateBadges();pintarCabecera();
   if(tab==='tartas'){$('#dia').onchange=e=>{diaSel=e.target.value;$('#dia-l').innerHTML=listaDia(diaSel)};
     $('#tr-f').onchange=e=>{diaReg=e.target.value||today();render()};$('#tr-save').onclick=guardarCuenta}
