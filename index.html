@@ -303,6 +303,7 @@ body.tema-d .d-inicio .ini-t.s-t.dest{background:#F5D9A8}body.tema-d .d-inicio .
 .p-pr span small{display:block;font-size:11px;color:#7A6A5E;font-weight:400}
 .t-enc{background:#F5D9A8!important;margin-bottom:12px}.t-enc .row{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
 @media (max-width:360px){.c-sh,.c-sr{grid-template-columns:minmax(0,1fr) 96px 96px}.c-cnt{grid-template-columns:28px 1fr 28px}}
+.i-sec{display:grid;gap:2px}
 .sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug:empty{display:none}.sug .sg{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--mantequilla);color:var(--cacao);font:600 14px var(--f-body);cursor:pointer}.sug .sg.otro{background:var(--surface);color:var(--muted)}
 .al-si .al-d{display:block;font-weight:600;font-size:11px;color:var(--muted)}
 .al-comun{background:var(--cacao);color:var(--crema);border-radius:16px;padding:12px 14px;margin:4px 0 12px}.al-comun b{font:700 17px/1.2 var(--f-display)}
@@ -808,7 +809,7 @@ function avisoCopia(){
   const A=avisos();if(!A.length)return '';
   return '<button class="bar'+(A[0].k==='bad'?' badbar':'')+'" data-act="avisos"><span><b>'+A.length+(A.length===1?' aviso':' avisos')+'</b> · '+esc(A[0].t)+(A.length>1?' y más':'')+'</span><span class="pill">Ver</span></button>'}
 function hacerCopia(){
-  readAll('fotos').then(f=>{const d={app:'obrador-sencillo',v:1,exportedAt:new Date().toISOString(),cfg:M.cfg,e:M.e,t:M.t,c:M.c,l:M.l,d:M.d,p:M.p,k:M.k,fotos:f};
+  readAll('fotos').then(f=>{const d={app:'obrador-sencillo',v:1,exportedAt:new Date().toISOString(),cfg:M.cfg,e:M.e,t:M.t,c:M.c,l:M.l,d:M.d,p:M.p,k:M.k,x:M.x,m:M.m,fotos:f};
     return shareFile('copia-puro-umami.json',JSON.stringify(d),'application/json')})
   .then(ok=>{if(ok){try{localStorage.setItem(KB,today());localStorage.setItem('os_copiaTs',String(Date.now()))}catch(e){}toast('Copia guardada. Elige siempre la misma carpeta de iCloud Drive y pulsa Sustituir.');render()}}).catch(()=>toast('No se pudo hacer la copia'))}
 function limpiarCopia(o){const N=v=>{const n=Number(v);return isFinite(n)?n:0},Nn=v=>v==null||v===''?null:N(v),obj=v=>v&&typeof v==='object'&&!Array.isArray(v)?v:{};
@@ -839,7 +840,11 @@ function restaurar(o){o=limpiarCopia(o);
    .then(()=>{M.cfg=o.cfg;kinds.forEach(k=>{M[k]=Object.assign({},o[k]||{})});Object.keys(fotoMem).forEach(k=>delete fotoMem[k]);Object.assign(fotoMem,idb?{}:(o.fotos||{}))}).then(()=>{if(typeof syncTodo==='function')return syncTodo()})}
 $('#bk-in').addEventListener('change',function(){const f=this.files&&this.files[0];this.value='';if(!f)return;
   const r=new FileReader();r.onload=()=>{let o;try{o=JSON.parse(r.result)}catch(e){toast('Ese archivo no es una copia de la app');return}
+    if(o&&o.app==='obrador-sencillo-cifrada'&&o.dat&&o.wc&&typeof abrirCopiaCifrada==='function'){abrirCopiaCifrada(o,mostrarCopia);return}
     if(!o||o.app!=='obrador-sencillo'||!o.cfg){toast('Ese archivo no es una copia de la app');return}
+    mostrarCopia(o)};
+  r.readAsText(f)});
+function mostrarCopia(o){if(!o||!o.cfg){toast('Ese archivo no es una copia de la app');return}
     const fe=String(o.exportedAt||'').slice(0,10),hm=String(o.exportedAt?new Date(o.exportedAt).toTimeString().slice(0,5):'');
     sheet('<h2>Cargar copia</h2><div class="small muted">Copia del '+fdate(fe)+(hm?' a las '+hm:'')+'.</div>'+
       '<div class="card" style="margin-top:12px"><b>Combinar con lo que tengo</b><div class="small">Junta lo de la copia con lo de este aparato. No se pierde nada de ninguno de los dos. Úsalo para pasar datos entre el iPhone y el Mac.</div>'+
@@ -847,8 +852,7 @@ $('#bk-in').addEventListener('change',function(){const f=this.files&&this.files[
       '<div class="card" style="border-color:var(--bad)"><b>Sustituir todo</b><div class="small">Borra lo de este aparato y deja solo lo de la copia. Úsalo solo en un móvil nuevo o si lo pierdes todo.</div>'+
       '<button class="btn danger full" id="rs-ok" style="margin-top:12px">Sustituir todo</button></div>');
     $('#rs-mix').onclick=()=>combinar(o).then(n=>{closeSheet();toast(n?'Combinado: '+n+' registros nuevos o actualizados':'Ya tenías todo, no había nada nuevo')},()=>toast('No se pudo combinar'));
-    confirmBtn($('#rs-ok'),'Pulsa otra vez para sustituir todo',()=>restaurar(o).then(()=>{closeSheet();toast('Copia restaurada')},()=>toast('No se pudo restaurar')))};
-  r.readAsText(f)});
+    confirmBtn($('#rs-ok'),'Pulsa otra vez para sustituir todo',()=>restaurar(o).then(()=>{closeSheet();toast('Copia restaurada')},()=>toast('No se pudo restaurar')))}
 
 /* ===== Ajustes ===== */
 function ajustes(){
@@ -1113,7 +1117,7 @@ function snapKeys(){return new Promise(res=>{if(!snapOk()){res([]);return}const 
 function autoSnap(){if(!snapOk())return Promise.resolve();const t=today();
   return snapKeys().then(keys=>{if(keys.includes(t))return;if(!Object.keys(M.e).length&&!Object.keys(M.t).length&&!Object.keys(M.d).length)return;
     const lim=new Date();lim.setDate(lim.getDate()-14);const corte=iso(lim);
-    const v=JSON.parse(JSON.stringify({at:Date.now(),cfg:M.cfg,e:M.e,t:M.t,c:M.c,l:M.l,d:M.d,p:M.p,k:M.k}));
+    const v=JSON.parse(JSON.stringify({at:Date.now(),cfg:M.cfg,e:M.e,t:M.t,c:M.c,l:M.l,d:M.d,p:M.p,k:M.k,x:M.x,m:M.m}));
     return tx('snap',s=>{s.put(v,t);keys.filter(k=>k<corte).forEach(k=>s.delete(k))})}).catch(e=>console.error(e))}
 function fillSnaps(){const box=$('#snaps');if(!box)return;
   snapKeys().then(keys=>{if(!document.getElementById('snaps'))return;
@@ -3154,6 +3158,42 @@ vTartas=function(){const h=vTartas0(),f=diaReg||today(),S=M.cfg.sabores||[];
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act]');if(!a)return;const d=a.dataset.act;
   if(d==='ped-pegar')pegarPedido();
   else if(d==='ta-enc'){const f=diaReg||today();Object.values(M.p).filter(p=>p.fecha===f&&p.estado!=='no').forEach(p=>(p.items||[]).forEach(i=>{if(i.tipo!=='porciones')cnt[i.saborId]=(cnt[i.saborId]||0)+(+i.uds||0)}));render();toast('Sumadas. Revisa y pulsa Guardar')}});
+
+/* ===== Fase 3: copia diaria cifrada en iCloud (con las recetas dentro) e informe de Sanidad por apartados ===== */
+function datosCopia(f){return {app:'obrador-sencillo',v:1,exportedAt:new Date().toISOString(),cfg:M.cfg,e:M.e,t:M.t,c:M.c,l:M.l,d:M.d,p:M.p,k:M.k,x:M.x,m:M.m,fotos:f}}
+/* si tienes código, la copia sale cifrada: sin tu código nadie puede leerla (ni las recetas, ni la caja, ni los clientes) */
+hacerCopia=function(){const cif=!!(PRIV.meta&&PRIV.dk&&PRIV.datos);
+  readAll('fotos').then(f=>{const d=datosCopia(f);if(!cif)return shareFile('copia-puro-umami.json',JSON.stringify(d),'application/json');
+    const todo={copia:d,rec:(PRIV.datos&&PRIV.datos.rec)||{}};
+    return enc(PRIV.dk,new TextEncoder().encode(JSON.stringify(todo))).then(dat=>{const m=PRIV.meta;
+      return shareFile('copia-puro-umami.json',JSON.stringify({app:'obrador-sencillo-cifrada',v:1,exportedAt:d.exportedAt,salt:m.salt,iter:m.iter,wc:m.wc,dat:dat}),'application/json')})})
+  .then(ok=>{if(ok){try{localStorage.setItem(KB,today());localStorage.setItem('os_copiaTs',String(Date.now()));if(cif)localStorage.setItem(RECK,today())}catch(e){}
+    toast((cif?'Copia cifrada guardada. ':'Copia guardada. ')+'Elige siempre la misma carpeta de iCloud Drive y pulsa Sustituir.');render()}}).catch(()=>toast('No se pudo hacer la copia'))};
+/* abrir una copia cifrada: pide el código, recupera las recetas y sigue como una copia normal */
+function abrirCopiaCifrada(o,seguir){sheet('<h2>Copia cifrada</h2><p class="small muted" style="margin-top:0">Copia del '+fdate(String(o.exportedAt||'').slice(0,10))+'. Escribe el código con el que se hizo.</p>'+
+  '<label for="cc-c">Código</label><input id="cc-c" type="password" inputmode="numeric" autocomplete="off"><button class="btn pri big" id="cc-ok">Abrir copia</button>');
+  $('#cc-c').onkeydown=e=>{if(e.key==='Enter')$('#cc-ok').click()};
+  $('#cc-ok').onclick=()=>{const code=$('#cc-c').value;if(!code)return;$('#cc-ok').disabled=true;
+    probarCodigo(code,o).then(raw=>{if(!raw){$('#cc-ok').disabled=false;toast('Código incorrecto');return}
+      return importDK(raw).then(k=>dec(k,o.dat)).then(b=>{const todo=JSON.parse(new TextDecoder().decode(b)),rec=todo.rec||{};
+        const guardaRec=Object.keys(rec).length?(PRIV.meta&&PRIV.dk&&PRIV.datos?(PRIV.datos.rec=Object.assign({},PRIV.datos.rec||{},rec),guardarDatos()):crearLlave(code,{rec:rec})):Promise.resolve();
+        return guardaRec.then(()=>{if(Object.keys(rec).length)toast('Recetas recuperadas');seguir(todo.copia)})})})
+    .catch(e=>{console.error(e);$('#cc-ok').disabled=false;toast('Esa copia no se puede abrir')})}}
+/* ---- informe de Sanidad: elegir qué apartados van ---- */
+const SEC_INF=[['s1','Recepción de materias primas'],['s2','Proveedores'],['s3','Producción y trazabilidad'],['s4','Temperaturas'],['s5','Limpieza y desinfección'],['s6','Documentación sanitaria'],['s7','Productos e ingredientes'],['s8','Tabla de alérgenos']];
+const informeSheet0=informeSheet;
+informeSheet=function(){informeSheet0();const go=$('#in-go');if(!go)return;
+  go.insertAdjacentHTML('beforebegin','<h3>Qué apartados van</h3><div class="i-sec">'+SEC_INF.map(([id,l],i)=>'<label class="check"><input type="checkbox" data-isec="'+id+'" checked> '+(i+1)+'. '+esc(l)+'</label>').join('')+'</div>'+
+    '<div class="two" style="margin:6px 0 10px"><button type="button" class="btn sm" id="is-all">Todos</button><button type="button" class="btn sm" id="is-none">Ninguno</button></div>');
+  $('#is-all').onclick=()=>$$('[data-isec]').forEach(c=>{c.checked=true});$('#is-none').onclick=()=>$$('[data-isec]').forEach(c=>{c.checked=false});
+  go.addEventListener('click',e=>{if(!$$('[data-isec]').some(c=>c.checked)){e.stopImmediatePropagation();toast('Elige al menos un apartado')}},true)};
+const crearInforme0=crearInforme;
+crearInforme=function(d,h,conFotos,conStats){const sel=$$('[data-isec]');const fuera=sel.length?sel.filter(c=>!c.checked).map(c=>c.dataset.isec):[];
+  return crearInforme0(d,h,conFotos,conStats).then(r=>{if(!fuera.length)return r;let html=r.html;
+    fuera.forEach(id=>{html=html.replace(new RegExp('<section id="'+id+'">[\\s\\S]*?</section>'),'').replace(new RegExp('<li><a href="#'+id+'">[\\s\\S]*?</a></li>'),'')});
+    /* si no van las fotos de las entradas ni los documentos, el anexo de fotos tampoco */
+    if(fuera.includes('s1')&&fuera.includes('s6'))html=html.replace(/<section class="anexo">[\s\S]*?<\/section>/,'');
+    return Object.assign({},r,{html:html})})};
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
