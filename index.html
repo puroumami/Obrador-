@@ -330,6 +330,8 @@ body.sin-anim .m-t,body.sin-anim .d-cab,body.sin-anim .d-kpis,body.sin-anim .d-h
 .o-tar{margin-bottom:12px}.o-falta{margin-bottom:10px;background:#F5D9A8!important}.o-falta .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.f2 .photo{min-height:150px;margin:0}.f2 .photo span{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px!important;text-align:center;font-size:13px}.f2 .photo b{font-size:13px}.f2 .photo img{max-height:180px;object-fit:cover}
 html,body{overscroll-behavior-y:none}
+.m-hoy{margin-top:12px;background:#fff;border:2px solid #EFE7CC;border-radius:18px;padding:12px 14px 6px}.m-hoy>b{display:block;font:600 19px var(--f-display);margin-bottom:4px}
+.m-tar{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;border:0;border-top:1px solid #F3EBD0;background:transparent;text-align:left;font:500 14px var(--f-body);color:var(--cacao);padding:6px 0}.m-tar:first-of-type{border-top:0}.m-tar span{width:24px;text-align:center}.m-tar i{margin-left:auto;font-style:normal;color:#B5A58F;font-size:20px}.m-tar.tarde{color:#7A6A5E}.m-tar.ok{color:#2E7D4F}
 .sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug:empty{display:none}.sug .sg{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--mantequilla);color:var(--cacao);font:600 14px var(--f-body);cursor:pointer}.sug .sg.otro{background:var(--surface);color:var(--muted)}
 .al-si .al-d{display:block;font-weight:600;font-size:11px;color:var(--muted)}
 .al-comun{background:var(--cacao);color:var(--crema);border-radius:16px;padding:12px 14px;margin:4px 0 12px}.al-comun b{font:700 17px/1.2 var(--f-display)}
@@ -2837,7 +2839,7 @@ function recalcularStock(){if(esInv()||!M.cfg||!PRIV.datos||!PRIV.meta||!Object.
   if(JSON.stringify(nuevo)!==JSON.stringify(viejo))saveCfg(Object.assign({},M.cfg,{stockAv:Object.assign({at:Date.now()},nuevo)})).catch(()=>{})}
 const stockBajo=()=>(M.cfg&&M.cfg.stockAv&&Array.isArray(M.cfg.stockAv.l)?M.cfg.stockAv.l:[]);
 const saborMes=()=>{const s=M.cfg&&M.cfg.saborMes;return s&&s.mes===today().slice(0,7)?(M.cfg.sabores||[]).find(x=>x.id===s.id)||null:null};
-function resumenObrador(){const B=stockBajo();if(B.length)return 'Queda poc'+(/s$/i.test(B[0].ing)?'os ':'o de ')+B[0].ing.toLowerCase();const sm=saborMes();return sm?'Sabor del mes: '+sm.nombre:'Stock al día'}
+function resumenObrador(){const B=stockBajo();if(B.length){const t='Poco '+B[0].ing.toLowerCase();return B.length===1&&t.length<=16?t:B.length+(B.length===1?' aviso de stock':' avisos de stock')}const sm=saborMes();return sm?'Sabor del mes: '+sm.nombre:'Stock al día'}
 function cabObrador(){const sm=saborMes(),B=stockBajo(),inv=esInv();const S=!inv&&PRIV.datos?calcStock():{};const cp=!inv&&PRIV.datos?cuantasPuedo(S):[];
   const R=M.cfg.recuentos||{},ult=Object.values(R).map(r=>r.fecha).sort().pop();
   const best=sm?cp.find(x=>x.s.id===sm.id):null;
@@ -3370,6 +3372,46 @@ crearInforme=function(d,h,conFotos,conStats){return crearInforme1(d,h,conFotos,c
   return Promise.all(E.map(e=>fotoData('nom_'+e.id))).then(F=>{const figs=E.map((e,i)=>F[i]?'<figure><img src="'+F[i]+'" alt=""><figcaption>'+esc('Producto: '+e.ing+(e.marca?' · '+e.marca:'')+' · '+fdate(e.fecha))+'</figcaption></figure>':'').join('');
     if(!figs)return r;let html=r.html;if(html.includes('<div class="fotos">'))html=html.replace('<div class="fotos">','<div class="fotos">'+figs);
     else html=html.replace('</body>','<section class="anexo"><h2>Anexo: fotos</h2><div class="fotos">'+figs+'</div></section></body>');return Object.assign({},r,{html:html})})})};
+
+/* ===== Lista de la compra automática y «Hoy» en el menú ===== */
+/* lo que necesitas para los encargos de los próximos días (según tu receta) más el mínimo de aviso, menos lo que tienes */
+function listaCompra(dias){dias=dias||7;if(!PRIV.datos)return null;const t=today(),h=sumarDias(t,dias),S=calcStock(),nec={};
+  Object.values(M.p).filter(p=>p.estado==='pendiente'&&p.fecha>=t&&p.fecha<=h).forEach(p=>(p.items||[]).forEach(i=>{const r=recetaDe(i.saborId);if(!r)return;
+    const n=i.tipo==='porciones'?(+i.uds||0)/(+M.cfg.porcionesTarta||10):(+i.uds||0);(r.ings||[]).forEach(x=>{const u=x.ud==='ud'?'ud':'g',k=x.ing+'|'+u;nec[k]=(nec[k]||0)+(+x.q||0)*n})}));
+  const L=[];(M.cfg.ingredientes||[]).forEach(ing=>{const s=S[ing];if(!s)return;const k=ing+'|'+s.u,m=minDe(ing,s),falta=(nec[k]||0)+m-s.q;
+    if(falta>0&&(nec[k]||s.q<=m)){const pv=Object.values(M.e).filter(e=>norm(e.ing)===norm(ing)&&e.provId).sort((a,b)=>a.fecha<b.fecha?1:-1)[0];
+      const p=pv?provDe(pv.provId):null;L.push({ing:ing,u:s.u,q:falta,enc:nec[k]||0,tengo:s.q,prov:p&&!p.inactivo?p:null})}});
+  return L}
+const redondeo=(q,u)=>u==='ud'?Math.ceil(q):q>=1000?Math.ceil(q/500)*500:Math.ceil(q/100)*100;
+function compraSheet(){conLlave('Lista de la compra',()=>{const L=listaCompra(7);
+  if(!L){toast('Abre el Obrador para calcularla');return}
+  const G={};L.forEach(x=>{const k=x.prov?x.prov.id:'_';(G[k]=G[k]||{p:x.prov,l:[]}).l.push(x)});
+  const txt=g=>'Hola'+(g.p&&g.p.contacto?' '+g.p.contacto.split(/\s+/)[0]:'')+', para '+(M.cfg.negocio||'Puro Umami Cheesecake')+' necesitaría:\n'+g.l.map(x=>'• '+x.ing+': '+fmtSt(redondeo(x.q,x.u),x.u,x.ing)).join('\n')+'\n¡Gracias!';
+  const wa=g=>{const n=g.p&&telWa(g.p.telefono);return n?'https://wa.me/'+n+'?text='+encodeURIComponent(txt(g)):'https://wa.me/?text='+encodeURIComponent(txt(g))};
+  sheet('<h2>Lista de la compra</h2><p class="small muted" style="margin-top:0">Para tus encargos de los próximos 7 días y para no bajar del aviso de stock. Redondeado hacia arriba.</p>'+
+   (L.length?Object.values(G).map(g=>'<div class="card c-num"><b>'+esc(g.p?g.p.nombre:'Sin proveedor')+'</b>'+g.l.map(x=>'<div class="row"><span>'+esc(x.ing)+'<small class="muted" style="display:block;font-size:11px">Tienes '+esc(fmtSt(x.tengo,x.u,x.ing))+(x.enc?' · encargos '+esc(fmtSt(x.enc,x.u,x.ing)):'')+'</small></span><b>'+esc(fmtSt(redondeo(x.q,x.u),x.u,x.ing))+'</b></div>').join('')+
+     '<a class="btn sm p-wa" style="margin-top:8px" href="'+wa(g)+'" target="_blank" rel="noopener">Pedir por WhatsApp</a></div>').join(''):
+     '<div class="empty"><b>No te falta nada</b>Con lo que tienes llegas a los encargos de esta semana.</div>')+
+   '<p class="small muted">Solo cuenta los ingredientes que has contado en el Obrador y los sabores que tienen receta.</p>')})}
+/* botón en el Obrador */
+const vObrador2=vObrador;
+vObrador=function(){const h=vObrador2();if(esInv()||!PRIV.datos)return h;const L=listaCompra(7)||[];
+  const b='<button class="card o-mes" data-act="ob-compra"><span class="small muted">'+(L.length?L.length+(L.length===1?' cosa que comprar':' cosas que comprar'):'No te falta nada esta semana')+'</span><b>Lista de la compra</b></button>';
+  const i=h.indexOf('<h3>Stock</h3>')>=0?h.indexOf('<div class="o-h">'):-1;return i>=0?h.slice(0,i)+b+h.slice(i):h+b};
+/* ---- «Hoy» en el menú: lo pendiente del día, cada cosa lleva a su sitio ---- */
+function tareasHoy(){const t=today(),c=M.cfg,T=[];if(!c)return T;
+  const tOk=(c.camaras||[]).every(x=>M.c[t+'_'+x.id]);if(!tOk)T.push({ic:'🌡️',t:'Apuntar temperaturas',go:'camara'});
+  const P=Object.values(M.p).filter(p=>p.fecha===t&&p.estado==='pendiente');if(P.length)T.push({ic:'📦',t:P.length+(P.length===1?' encargo hoy':' encargos hoy')+(P[0].hora?' · el primero a las '+P[0].hora:''),go:'pedidos'});
+  const hechas=Object.values(M.t).filter(x=>x.fecha===t).reduce((a,x)=>a+(+x.uds||0),0);if(!hechas&&!esInv())T.push({ic:'🍰',t:'Apuntar las tartas de hoy',go:'tartas'});
+  if(!esInv()&&typeof sobrasAviso==='function'){const S=sobrasAviso();if(S.length)T.push({ic:'⏰',t:S.length+(S.length===1?' sobra caduca':' sobras caducan')+' pronto',go:'conta'})}
+  if(!esInv()&&typeof diaCierre==='function'&&diaCierre(t)&&!cierreDe(t))T.push({ic:'🌙',t:'Cierre del día a las '+HORA_CIERRE,go:'conta',tarde:1});
+  return T}
+const vMenu0=vMenu;
+vMenu=function(){const h=vMenu0(),T=tareasHoy();
+  const hoy='<div class="m-hoy"><b>Hoy</b>'+(T.length?T.slice(0,4).map(x=>'<button class="m-tar'+(x.tarde?' tarde':'')+'" data-go="'+x.go+'"><span aria-hidden="true">'+x.ic+'</span>'+esc(x.t)+'<i aria-hidden="true">›</i></button>').join(''):'<div class="m-tar ok"><span aria-hidden="true">✓</span>Todo hecho por ahora</div>')+'</div>';
+  const i=h.indexOf('<button class="m-insp"');return i>=0?h.slice(0,i)+hoy+h.slice(i):h+hoy};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ob-compra"]');if(a)compraSheet();
+  const g=e.target.closest&&e.target.closest('.m-tar[data-go="tartas"]');if(g)diaReg=today()},true);
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
