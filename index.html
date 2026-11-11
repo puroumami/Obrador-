@@ -329,6 +329,7 @@ body.sin-anim .m-t,body.sin-anim .d-cab,body.sin-anim .d-kpis,body.sin-anim .d-h
 .sheet{overscroll-behavior:contain}.sheet .grip{touch-action:none;padding:6px 0 12px;margin-top:-6px}
 .o-tar{margin-bottom:12px}.o-falta{margin-bottom:10px;background:#F5D9A8!important}.o-falta .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.f2 .photo{min-height:150px;margin:0}.f2 .photo span{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px!important;text-align:center;font-size:13px}.f2 .photo b{font-size:13px}.f2 .photo img{max-height:180px;object-fit:cover}
+html,body{overscroll-behavior-y:none}
 .sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug:empty{display:none}.sug .sg{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--mantequilla);color:var(--cacao);font:600 14px var(--f-body);cursor:pointer}.sug .sg.otro{background:var(--surface);color:var(--muted)}
 .al-si .al-d{display:block;font-weight:600;font-size:11px;color:var(--muted)}
 .al-comun{background:var(--cacao);color:var(--crema);border-radius:16px;padding:12px 14px;margin:4px 0 12px}.al-comun b{font:700 17px/1.2 var(--f-display)}
@@ -3289,20 +3290,29 @@ avisos=function(){const A=avisos5();if(enInsp()||esInv())return A;const n=huevos
 const irAviso1=irAviso;irAviso=function(d){if(d.hv){closeSheet();huevosSheet();return}return irAviso1(d)};
 const verAvisos1=verAvisos;verAvisos=function(){verAvisos1();const A=avisos();$$('#sheet [data-act="av-go"]').forEach((b,i)=>{const a=A[i];if(a&&a.hv)b.dataset.hv='1'})};
 
-/* ===== Cerrar las ventanas deslizando hacia abajo (como en el iPhone) ===== */
-(function(){const sh=$('#sheet');if(!sh)return;let y0=0,t0=0,dy=0,arr=false,listo=false;
+/* ===== Cerrar las ventanas deslizando hacia abajo (como en el iPhone) =====
+   En el iPhone, Safari empieza a mover la página de detrás si no se coge el gesto desde el primer movimiento.
+   Por eso: 1) mientras hay una ventana abierta, la página de detrás queda bloqueada;
+            2) si la ventana está arriba del todo y el dedo baja, el gesto es nuestro desde el primer píxel. */
+(function(){const sh=$('#sheet'),dlg=$('#dlg');if(!sh||!dlg)return;let y0=0,t0=0,dy=0,arr=false,listo=false,yScroll=0,bloq=false;
+  const bloquear=()=>{if(bloq)return;bloq=true;yScroll=window.scrollY||0;const b=document.body.style;b.position='fixed';b.top=(-yScroll)+'px';b.left='0';b.right='0';b.width='100%';document.documentElement.style.overscrollBehavior='none'};
+  const soltar=()=>{if(!bloq)return;bloq=false;const b=document.body.style;b.position='';b.top='';b.left='';b.right='';b.width='';document.documentElement.style.overscrollBehavior='';window.scrollTo(0,yScroll)};
+  new MutationObserver(()=>{if(dlg.open)bloquear();else soltar()}).observe(dlg,{attributes:true,attributeFilter:['open']});
+  dlg.addEventListener('close',()=>{soltar();poner(0,false)});
+  const arriba=()=>sh.scrollTop<=6;
   const campo=el=>el&&el.closest&&el.closest('input,select,textarea,[contenteditable],.c-cnt,.r-st,.step');
   const poner=(y,anim)=>{sh.style.transition=anim?'transform .2s ease-out':'none';sh.style.transform=y?'translateY('+y+'px)':''};
   sh.addEventListener('touchstart',e=>{if(e.touches.length!==1){listo=false;return}const tc=e.touches[0],enGrip=!!(e.target.closest&&e.target.closest('.grip'));
-    /* solo se arrastra si estás arriba del todo de la ventana (o tocando la rayita) y no en un campo */
-    listo=(enGrip||sh.scrollTop<=0)&&!(campo(e.target)&&!enGrip);arr=false;dy=0;y0=tc.clientY;t0=Date.now()},{passive:true});
+    listo=(enGrip||arriba())&&!(campo(e.target)&&!enGrip);arr=false;dy=0;y0=tc.clientY;t0=Date.now()},{passive:true});
   sh.addEventListener('touchmove',e=>{if(!listo)return;const d=e.touches[0].clientY-y0;
-    if(!arr){if(d>8&&sh.scrollTop<=0)arr=true;else if(d<-4){listo=false;return}else return}
+    if(!arr){if(d<0&&arriba()&&sh.scrollHeight>sh.clientHeight+2){listo=false;return}/* quiere subir el contenido: lo dejamos */
+      if(d>0&&arriba()){e.preventDefault();if(d>6){arr=true;sh.scrollTop=0}else return}else if(d<0){listo=false;return}else return}
     dy=Math.max(0,d);e.preventDefault();poner(dy,false)},{passive:false});
   const fin=()=>{if(!arr){listo=false;return}const v=dy/Math.max(1,Date.now()-t0);arr=false;listo=false;
-    if(dy>110||(dy>50&&v>.5)){poner(sh.offsetHeight||600,true);setTimeout(()=>{closeSheet();poner(0,false)},190)}else poner(0,true)};
+    if(dy>100||(dy>45&&v>.45)){poner(sh.offsetHeight||600,true);setTimeout(()=>{closeSheet();poner(0,false)},190)}else poner(0,true)};
   sh.addEventListener('touchend',fin);sh.addEventListener('touchcancel',fin);
-  $('#dlg').addEventListener('close',()=>poner(0,false))})();
+  /* tocar y arrastrar fuera de la ventana (en lo oscuro) tampoco mueve la página */
+  dlg.addEventListener('touchmove',e=>{if(!sh.contains(e.target))e.preventDefault()},{passive:false})})();
 
 /* ===== Apuntar las tartas del día desde el Obrador y ver qué se descuenta del stock ===== */
 function gastoDe(cuenta){const G={},sinRec=[];Object.keys(cuenta).forEach(sid=>{const n=cuenta[sid]||0;if(!n)return;const r=recetaDe(sid);
