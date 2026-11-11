@@ -340,6 +340,9 @@ html,body{overscroll-behavior-y:none}
 .cj-tot{margin:10px 0 2px;font-size:15px}.cj-row{display:flex;width:100%;border:0;background:transparent;text-align:left;font-family:var(--f-body);color:var(--ink);padding:7px 0;border-top:1px solid #EFE7CC}.cj-row:first-child{border-top:0}.cj-row small{display:block;font-size:11.5px;color:#7A6A5E}.cj-row.on b{color:var(--caramelo)}
 .cj-acc{display:grid;grid-template-columns:1.3fr 1fr;gap:8px;margin-bottom:10px}
 .pv-sug{color:#2E7D4F;font-weight:600}
+.al-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}.al-m{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:78px;padding:10px;border:1.5px dashed #E2D9BC;border-radius:16px;background:#fff;text-align:left;font-family:var(--f-body);color:var(--cacao)}.al-m b{font:600 18px var(--f-display);text-transform:capitalize}.al-m span{font-size:12px;color:#7A6A5E}.al-m small{font-weight:700;font-size:12.5px}.al-m.lleno{border-style:solid;background:#E4E5C6}.al-m.fut{opacity:.4}
+.al-btn{margin-bottom:12px;border:2px dashed var(--salvia)!important;background:transparent!important}.al-prog{margin-top:10px}.al-prog .d-bar{margin-top:8px}
+.pv-cif{margin-bottom:10px}
 .sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug:empty{display:none}.sug .sg{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--mantequilla);color:var(--cacao);font:600 14px var(--f-body);cursor:pointer}.sug .sg.otro{background:var(--surface);color:var(--muted)}
 .al-si .al-d{display:block;font-weight:600;font-size:11px;color:var(--muted)}
 .al-comun{background:var(--cacao);color:var(--crema);border-radius:16px;padding:12px 14px;margin:4px 0 12px}.al-comun b{font:700 17px/1.2 var(--f-display)}
@@ -620,7 +623,7 @@ function formEntrada(ing,edit,after){
     const o={id:e.id||uid(),ing:ing,lote:lote,marca:$('#en-marca').value.trim(),provId:pv?pv.id:'',provNombre:pv?pv.nombre:'',cant:leerCantidad().cant,ud:leerCantidad().ud,fecha:$('#en-f').value||today(),cad:$('#en-c').value,foto:!!(foto||tenia),ts:e.ts||Date.now()};
     return (foto?saveFoto(o.id,foto):Promise.resolve()).then(()=>saveRec('e',o))
      .then(()=>{if(!factura)return;return Promise.resolve(facIA).then(r=>{const dc={id:uid(),tipo:'Factura',nombre:ing+(o.marca?' · '+o.marca:''),provId:o.provId,provNombre:o.provNombre,fecha:o.fecha,vence:'',eid:o.id,archivo:facArch,ts:Date.now()};
-       dc.hash=huella(factura);if(r){if(r.numero)dc.num=r.numero;if(r.tipo==='Albarán')dc.tipo='Albarán';if(r.total!=null)dc.total=r.total;if(r.lineas.length)dc.lineas=r.lineas;if(!dc.provId&&r.proveedor){const q=norm(r.proveedor),pv=provs().find(p=>{const n=norm(p.nombre||'');return n&&(n===q||q.includes(n)||n.includes(q))});if(pv){dc.provId=pv.id;dc.provNombre=pv.nombre}else dc.provNombre=r.proveedor}if(r.fecha)dc.fecha=r.fecha}
+       dc.hash=huella(factura);if(r){if(r.numero)dc.num=r.numero;if(r.tipo==='Albarán')dc.tipo='Albarán';if(r.total!=null)dc.total=r.total;if(r.lineas.length)dc.lineas=r.lineas;if(r.cif)dc.cifLeido=r.cif;if(r.rgseaa)dc.rsLeido=r.rgseaa;if(!dc.provId&&r.proveedor){const q=norm(r.proveedor),pv=provs().find(p=>{const n=norm(p.nombre||'');return n&&(n===q||q.includes(n)||n.includes(q))});if(pv){dc.provId=pv.id;dc.provNombre=pv.nombre}else dc.provNombre=r.proveedor}if(r.fecha)dc.fecha=r.fecha}
        return confirmarRepetido(dc,factura).then(si=>{if(!si){facRep=true;toast('Entrada guardada. '+(dc.tipo==='Albarán'?'El albarán':'La factura')+' no se ha repetido.');return}return saveFoto('doc_'+dc.id,factura).then(()=>saveRec('d',dc))})})}).then(()=>{if(!facRep)toast('Guardado: '+ing+(lote?' · lote '+lote:'')+(factura?' · factura apuntada':''));closeSheet();if(after)setTimeout(after,50)})}).catch(()=>{})};
   if(edit)confirmBtn($('#en-del'),'Pulsa otra vez para borrar',()=>{delRec('e',e.id).then(()=>{delFoto(e.id);closeSheet();toast('Entrada borrada')})})}
 /* Marcas: te sugiere las que ya has usado y, al elegir una, rellena con tu última compra de esa marca */
@@ -1044,6 +1047,7 @@ function formDoc(tipo,pid){let foto=null,arch='img';
     if(['Factura','Albarán'].includes(o.tipo)&&tot!=null&&tot>=0)o.total=tot;
     if(['Factura','Albarán'].includes(o.tipo)){const nm=$('#dc-num').value.trim().slice(0,40);if(nm)o.num=nm;o.hash=huella(foto)}
     if(typeof tomarAutoLineas==='function'){const L=tomarAutoLineas();if(L&&L.length&&esFactura(o))o.lineas=L}
+    if(typeof autoX!=='undefined'&&autoX){if(autoX.cif)o.cifLeido=autoX.cif;if(autoX.rgseaa)o.rsLeido=autoX.rgseaa;autoX=null}
     return (esFactura(o)?confirmarRepetido(o,foto):Promise.resolve(true)).then(si=>{if(!si){toast('No se ha guardado: ya lo tenías');return}
     return saveFoto('doc_'+o.id,foto).then(()=>saveRec('d',o)).then(()=>{closeSheet();toast((o.tipo==='Factura'?'Factura guardada':'Documento guardado')+(pv?' · '+pv.nombre:''))})})}).catch(()=>{})}}
 function verDoc(id){const d=M.d[id];if(!d)return;const st=docEstado(d);
@@ -2317,18 +2321,28 @@ function autoLote(d){const h=$('#en-hint');if(!h)return;
     const falta=[];if(!r.lote)falta.push('lote');if(!isoOk(r.caducidad))falta.push('caducidad');
     h.className='live '+(falta.length?'warn':'okc');h.textContent=falta.length?'Leído. No se ve bien: '+falta.join(' y ')+'. Escríbelo tú.':'Leído. Comprueba que el lote y la fecha están bien y guarda.'})}
 function datosDocIA(r){if(!r||typeof r!=='object')return null;const o={lineas:[]};
-  if(TIPOS.includes(r.tipo))o.tipo=r.tipo;if(r.proveedor)o.proveedor=String(r.proveedor).trim().slice(0,80);if(r.numero!=null&&String(r.numero).trim())o.numero=String(r.numero).trim().slice(0,40);if(isoOk(r.fecha))o.fecha=r.fecha;
+  if(TIPOS.includes(r.tipo))o.tipo=r.tipo;if(r.proveedor)o.proveedor=String(r.proveedor).trim().slice(0,80);if(r.numero!=null&&String(r.numero).trim())o.numero=String(r.numero).trim().slice(0,40);if(isoOk(r.fecha))o.fecha=r.fecha;const cf=limpiaCif(r.cif);if(cf)o.cif=cf;const rs=limpiaRs(r.rgseaa);if(rs)o.rgseaa=rs;
   if(typeof r.total==='number'&&isFinite(r.total)&&r.total>=0&&r.total<1e6)o.total=Math.round(r.total*100)/100;
   o.lineas=(Array.isArray(r.lineas)?r.lineas:[]).slice(0,60).filter(l=>l&&l.producto).map(l=>({ing:String(l.producto).slice(0,60),cant:typeof l.cantidad==='number'&&isFinite(l.cantidad)?l.cantidad:null,ud:['kg','g','L','ml','ud'].includes(l.unidad)?l.unidad:'kg',eur:typeof l.importe==='number'&&isFinite(l.importe)?l.importe:null}));return o}
+/* CIF/NIF español válido (sin espacios ni guiones) y que no sea el tuyo */
+function limpiaCif(v){if(v==null)return '';let s=String(v).toUpperCase().replace(/[\s.\-\/]/g,'').replace(/^ES/,'');
+  if(/^\d{7}[A-Z]$/.test(s))s='0'+s;/* DNI escrito sin el cero de delante */
+  if(!/^([ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]|\d{8}[A-Z]|[XYZKLM]\d{7}[A-Z])$/.test(s))return '';
+  /* DNI y NIE: la letra tiene que cuadrar (si no, la foto se leyó mal) */
+  if(/^(\d{8}|[XYZ]\d{7})[A-Z]$/.test(s)){const n=+s.slice(0,8).replace(/^X/,'0').replace(/^Y/,'1').replace(/^Z/,'2');if('TRWAGMYFPDXBNJZSQVHLCKE'[n%23]!==s[8])return ''}const mio=String(M.cfg&&M.cfg.nif||'').toUpperCase().replace(/[\s.\-\/]/g,'').replace(/^ES/,'');return s===mio?'':s}
+function limpiaRs(v){if(v==null)return '';const s=String(v).toUpperCase().replace(/\s+/g,'').replace(/^(RGSEAA|RS|R\.S\.|NRS)[:.]?/,'').slice(0,24);if(!/\d{2}/.test(s)||!/^[0-9A-Z.\/\-]+$/.test(s))return '';const mio=String(M.cfg&&M.cfg.rgsean||'').toUpperCase().replace(/\s+/g,'');return s===mio?'':s}
+let autoX=null;
 let autoL=null;function tomarAutoLineas(){const l=autoL;autoL=null;return l}
 function autoDoc(d){autoL=null;const h=$('#dc-hint');if(!iaOn()||!h)return;h.className='live warn';h.textContent='Leyendo el documento…';
   leerIA(d,'doc','La imagen es un documento de un obrador de tartas de queso en España (factura, albarán, certificado, carnet, informe...). '+
     'Responde solo con un objeto JSON con estas claves: "tipo" (uno exacto de: '+TIPOS.join(', ')+'), "proveedor" (empresa o persona que lo emite), '+
     '"numero" (número de la factura o del albarán tal como aparece; si no aparece, null), "fecha" (fecha del documento, YYYY-MM-DD), "caduca" (fecha de caducidad o validez si aparece, YYYY-MM-DD; si no aparece, null), '+
     '"total" (si es factura o albarán: importe total en euros como número; si no, null), '+
+    '"cif" (CIF, NIF o DNI de quien EMITE el documento, sea empresa o autónomo, no el del cliente; si no aparece, null), '+
+    '"rgseaa" (número de Registro Sanitario o RGSEAA de la empresa que emite el documento; si no aparece, null), '+
     '"lineas" (si es factura o albarán: lista de productos [{"producto": texto, "cantidad": número o null, "unidad": "kg"|"g"|"L"|"ml"|"ud", "importe": euros o null}]; si no, []). '+
     'Usa null en lo que no se lea y no inventes nada. Hoy es '+today()+'.')
-  .then(r=>{if(!document.getElementById('dc-hint'))return;
+  .then(r=>{autoX=r&&typeof r==='object'?{cif:limpiaCif(r.cif),rgseaa:limpiaRs(r.rgseaa)}:null;if(!document.getElementById('dc-hint'))return;
     if(!r||typeof r!=='object'){h.className='hint';h.textContent='No se pudo leer'+(window.__iaMotivo?' ('+window.__iaMotivo+')':'')+'. Rellénalo tú.';return}
     if(TIPOS.includes(r.tipo))$('#dc-t').value=r.tipo;if(r.proveedor){elegirProvPorNombre('dc-p',String(r.proveedor));if(!$('#dc-p').value)poner('dc-n',String(r.proveedor).trim())}
     if(isoOk(r.fecha))poner('dc-f',r.fecha);if(r.numero!=null&&String(r.numero).trim())poner('dc-num',String(r.numero).trim().slice(0,40));if(isoOk(r.caduca))poner('dc-v',r.caduca);
@@ -3451,20 +3465,27 @@ function asegurarProv(nombre,trae){const r=colaProv.then(()=>{let p=provPorNombr
   p={id:'pv'+uid(),nombre:limpiaNombre(nombre),suministra:(trae||[]).join(', ').slice(0,200),cif:'',rgseaa:'',telefono:'',email:'',contacto:'',direccion:'',notas:'Creado solo al subir una factura',ts:Date.now()};
   L.push(p);return guardarProvs(L).then(()=>{toast('Proveedor nuevo: '+p.nombre);return p})});colaProv=r.catch(()=>{});return r}
 const exacto=(a,b)=>normProv(a)===normProv(b);
+const cifN=v=>String(v||'').toUpperCase().replace(/[\s.\-\/]/g,'').replace(/^ES/,'');
+const provPorCif=c=>{const k=cifN(c);return k?provs().find(p=>cifN(p.cif)===k)||null:null};
+/* si la factura trae CIF o registro sanitario y el proveedor no los tiene, se ponen solos */
+function rellenarProv(pid,docs){const r=colaProv.then(()=>{const L=JSON.parse(JSON.stringify(M.cfg.proveedores||[])),x=L.find(p=>p.id===pid);if(!x)return null;
+  const cif=(docs.find(d=>d.cifLeido)||{}).cifLeido,rs=(docs.find(d=>d.rsLeido)||{}).rsLeido;let cambia=[];
+  if(cif&&!String(x.cif||'').trim()){x.cif=cif;cambia.push('CIF')}if(rs&&!String(x.rgseaa||'').trim()){x.rgseaa=rs;cambia.push('registro sanitario')}
+  if(!cambia.length)return null;x.ts=Date.now();return guardarProvs(L).then(()=>{toast(x.nombre+': '+cambia.join(' y ')+' apuntado'+(cambia.length>1?'s':''));return x})});colaProv=r.catch(()=>{});return r}
 /* ---- preguntar antes de añadir un proveedor nuevo ---- */
 const colaPreg=[];let preguntando=false;const noAhora=new Set();
 function preguntarProv(nombre){const k=normProv(nombre);if(!k||noAhora.has(k)||colaPreg.some(x=>normProv(x)===k))return;colaPreg.push(limpiaNombre(nombre));siguientePreg()}
 function siguientePreg(){if(preguntando||!colaPreg.length)return;const dlg=$('#dlg');if(dlg&&dlg.open){setTimeout(siguientePreg,700);return}
   const nombre=colaPreg.shift(),k=normProv(nombre),D=Object.values(M.d).filter(d=>!d.provId&&d.provNombre&&normProv(d.provNombre)===k);
-  if(!D.length){siguientePreg();return}preguntando=true;const cand=provPorNombre(nombre),trae=[...new Set(D.flatMap(traeDe))];
-  sheet('<h2>¿Añado este proveedor?</h2><p class="small muted" style="margin-top:0">Lo he leído en '+(D.length===1?'tu '+esc((D[0].tipo||'factura').toLowerCase())+' del '+fshort(D[0].fecha):D.length+' papeles')+(trae.length?' · te trae '+esc(trae.join(', ')):'')+'.</p>'+
+  if(!D.length){siguientePreg();return}preguntando=true;const cifD=(D.find(d=>d.cifLeido)||{}).cifLeido,cand=provPorCif(cifD)||provPorNombre(nombre),trae=[...new Set(D.flatMap(traeDe))];
+  sheet('<h2>¿Añado este proveedor?</h2><p class="small muted" style="margin-top:0">Lo he leído en '+(D.length===1?'tu '+esc((D[0].tipo||'factura').toLowerCase())+' del '+fshort(D[0].fecha):D.length+' papeles')+(trae.length?' · te trae '+esc(trae.join(', ')):'')+'.'+(cifD?' '+(/^[A-HJNPQRSUVW]/.test(cifD)?'CIF':'DNI/NIF')+' <b>'+esc(cifD)+'</b>.':'')+'</p>'+
     (cand?'<button class="btn pri big" id="pq-cand">Sí, es «'+esc(cand.nombre)+'»</button><p class="small muted" style="text-align:center;margin:8px 0">o si es otro distinto:</p>':'')+
     '<label for="pq-n" style="margin-top:0">Nombre del proveedor</label><input id="pq-n" value="'+esc(nombre)+'" autocomplete="off"><div class="hint">Corrígelo si la foto no se leyó bien.</div>'+
     '<button class="btn '+(cand?'':'pri ')+'big" id="pq-si">Añadir proveedor nuevo</button>'+
     (provs().length?'<label for="pq-e">…o es uno que ya tengo</label><select id="pq-e"><option value="">— Elegir —</option>'+provs().filter(p=>!p.inactivo).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.nombre)+'</option>').join('')+'</select>':'')+
     '<button class="btn full" id="pq-no" style="margin-top:12px">Ahora no</button>');
   const fin=()=>{preguntando=false;setTimeout(siguientePreg,300)};const dlgEl=$('#dlg'),alCerrar=()=>{dlgEl.removeEventListener('close',alCerrar);noAhora.add(k);fin()};dlgEl.addEventListener('close',alCerrar);
-  const unir=p=>Promise.all(D.map(d=>saveRec3('d',Object.assign({},d,{provId:p.id,provNombre:p.nombre,ts:Date.now()})))).then(()=>{dlgEl.removeEventListener('close',alCerrar);closeSheet();toast('Unido a '+p.nombre+'. Ya te sale al registrar productos.');fin()});
+  const unir=p=>Promise.all(D.map(d=>saveRec3('d',Object.assign({},d,{provId:p.id,provNombre:p.nombre,ts:Date.now()})))).then(()=>rellenarProv(p.id,D)).then(()=>{dlgEl.removeEventListener('close',alCerrar);closeSheet();toast('Unido a '+p.nombre+'. Ya te sale al registrar productos.');fin()});
   if($('#pq-cand'))$('#pq-cand').onclick=()=>asegurarProv(cand.nombre,trae).then(unir).catch(()=>{});
   $('#pq-si').onclick=()=>{const n=limpiaNombre($('#pq-n').value);if(!n){toast('Escribe el nombre');return}const ya=provs().find(p=>exacto(p.nombre,n));
     (ya?asegurarProv(ya.nombre,trae):crearProv(n,trae)).then(unir).catch(()=>{})};
@@ -3475,11 +3496,13 @@ function crearProv(nombre,trae){const r=colaProv.then(()=>{const L=JSON.parse(JS
   L.push(p);return guardarProvs(L).then(()=>p)});colaProv=r.catch(()=>{});return r}
 const saveRec3=saveRec;
 saveRec=function(kind,o){if(kind!=='d'||!o||esInv()||!M.cfg)return saveRec3(kind,o);
+  if(!o.provId&&(o.cifLeido&&provPorCif(o.cifLeido))){const p=provPorCif(o.cifLeido);return saveRec3(kind,Object.assign({},o,{provId:p.id,provNombre:p.nombre})).then(r=>{rellenarProv(p.id,[o]).catch(()=>{});return r})}
   if(!o.provId&&o.provNombre&&String(o.provNombre).trim()){const p=provs().find(x=>exacto(x.nombre,o.provNombre));
     /* si el nombre es exactamente uno tuyo, se une solo; si no, te pregunta */
-    if(p)return asegurarProv(p.nombre,traeDe(o)).then(p=>saveRec3(kind,Object.assign({},o,{provId:p.id,provNombre:p.nombre}))).catch(()=>saveRec3(kind,o));
+    if(p)return asegurarProv(p.nombre,traeDe(o)).then(p=>saveRec3(kind,Object.assign({},o,{provId:p.id,provNombre:p.nombre})).then(r=>{rellenarProv(p.id,[o]).catch(()=>{});return r})).catch(()=>saveRec3(kind,o));
     return saveRec3(kind,o).then(r=>{preguntarProv(o.provNombre);return r})}
   if(o.provId&&traeDe(o).length){const p=provDe(o.provId);if(p)asegurarProv(p.nombre,traeDe(o)).catch(()=>{})}
+  if(o.provId&&(o.cifLeido||o.rsLeido))return saveRec3(kind,o).then(r=>{rellenarProv(o.provId,[o]).catch(()=>{});return r});
   return saveRec3(kind,o)};
 /* los papeles que ya tenías solo con el nombre escrito: los exactos se unen solos y por los demás te pregunta */
 let yaUnidas=false;
@@ -3576,6 +3599,81 @@ formEntrada=function(ing,edit,after){formEntrada3(ing,edit,after);if(edit&&edit.
   if(![...s.options].some(o=>o.value===g.id))return;s.value=g.id;s.onchange&&s.onchange();
   s.insertAdjacentHTML('afterend','<div class="hint pv-sug">✓ '+esc(provNom({provId:g.id}))+' · '+esc(g.por==='te lo trae'?'es quien te lo trae':g.por==='la última vez'?'como la última vez':'según tu '+g.por)+'</div>');
   s.addEventListener('change',()=>{const h=$('.pv-sug');if(h)h.remove()},{once:true})};
+
+/* ===== Almanaque de compras: meter facturas de meses anteriores (varias de golpe) y ver qué se compró cada mes ===== */
+const ENVASE_RX=/caja|bandeja|blonda|pegatina|etiqueta|envase|tarrina|bolsa|film|papel|vaso|cuchar|tapa|carton|cart[oó]n|servilleta|base dorada|disco/i;
+/* clasifica cada línea de factura: ingrediente tuyo, envase u otro */
+function claseLinea(l){const p=String(l&&l.ing||'');const ing=(M.cfg.ingredientes||[]).find(i=>{const a=norm(i),b=norm(p);return a&&b&&(b.includes(a)||a.includes(b))});
+  if(ing)return {k:'ing',n:ing};if(ENVASE_RX.test(norm(p)))return {k:'env',n:nombreEnvase(p)};return {k:'otro',n:p.slice(0,40)}}
+function nombreEnvase(p){const n=norm(p);for(const [rx,t] of [[/caja/,'Cajas'],[/bandeja|blonda|disco|base dorada/,'Bandejas'],[/pegatina|etiqueta/,'Pegatinas'],[/tarrina|envase|vaso/,'Envases de porción'],[/bolsa/,'Bolsas'],[/cuchar/,'Cucharillas'],[/servilleta/,'Servilletas'],[/film|papel/,'Film y papel']])if(rx.test(n))return t;return 'Otros envases'}
+/* cantidad real de la línea: «6 ud de queso 2 kg» = 12 kg */
+function cantLinea(l){let q=+l.cant||0,u=l.ud||'kg';if(!(q>0))return null;const m=String(l.ing||'').match(/(\d+(?:[.,]\d+)?)\s?(kg|kilos?|g|gr|grs|l|lt|litros?|ml)\b/i);
+  if(u==='ud'&&m){const v=parseFloat(m[1].replace(',','.')),x=m[2].toLowerCase();const g=/^k/.test(x)?v*1000:/^(g|gr)/.test(x)?v:/^(l|lt|litro)/.test(x)?v*1000:v;return {q:q*g,u:'g'}}
+  if(u==='kg'||u==='L')return {q:q*1000,u:'g'};if(u==='g'||u==='ml')return {q:q,u:'g'};return {q:q,u:'ud'}}
+function comprasMes(k){const D=Object.values(M.d).filter(d=>esFactura(d)&&d.fecha.slice(0,7)===k),out={ing:{},env:{},otro:{},total:0,n:D.length,sinLineas:0};
+  D.forEach(d=>{if(sumable(d)&&d.total>0)out.total+=d.total;if(!(d.lineas||[]).length){out.sinLineas++;return}
+    d.lineas.forEach(l=>{const c=claseLinea(l),q=cantLinea(l),g=out[c.k],x=g[c.n]=g[c.n]||{q:0,u:q?q.u:'ud',eur:0,ud:0};if(q&&q.u===x.u)x.q+=q.q;if(l.eur>0)x.eur+=l.eur})});return out}
+/* con tu receta: cuántas tartas salen más o menos con lo comprado (mira el ingrediente principal) */
+function tartasEstimadas(C){if(!PRIV.datos)return null;let best=null;
+  Object.keys(C.ing).forEach(ing=>{const x=C.ing[ing];if(!(x.q>0))return;const usos=Object.keys(PRIV.datos.rec||{}).map(id=>(recetaDe(id).ings||[]).find(r=>norm(r.ing)===norm(ing)&&(r.ud==='ud'?'ud':'g')===x.u)).filter(Boolean);
+    if(!usos.length)return;const media=usos.reduce((a,r)=>a+(+r.q||0),0)/usos.length;if(!(media>0))return;const n=Math.round(x.q/media);if(!best||x.eur>best.eur||(!best.eur&&x.q>best.q))best={ing:ing,n:n,eur:x.eur,q:x.q}});return best}
+/* ---- el almanaque ---- */
+function almanaque(y){y=y||today().slice(0,4);const hoyK=today().slice(0,7),inv=esInv();let h='<h2>Almanaque de compras</h2><div class="c-mes"><button class="btn sm" id="al-a" aria-label="Año anterior">‹</button><b>'+y+'</b><button class="btn sm" id="al-b" aria-label="Año siguiente"'+(y>=today().slice(0,4)?' disabled':'')+'>›</button></div>'+
+  '<p class="small muted" style="margin-top:0">Toca un mes para meter sus facturas y albaranes, aunque sean antiguos. Con ellas sé qué compraste y más o menos cuánto hiciste.</p><div class="al-g">';
+  for(let i=1;i<=12;i++){const k=y+'-'+pad(i),fut=k>hoyK,C=fut?null:comprasMes(k);
+    h+='<button class="al-m'+(fut?' fut':C.n?' lleno':'')+'" data-alm="'+k+'"'+(fut?' disabled':'')+'><b>'+MES3[i-1]+'</b><span>'+(fut?'':C.n?C.n+(C.n===1?' papel':' papeles'):'vacío')+'</span>'+(!fut&&C.n&&!inv&&C.total?'<small>'+eur(C.total).replace(/,\d\d\s?€$/,' €')+'</small>':'')+'</button>'}
+  h+='</div>';sheet(h);$('#al-a').onclick=()=>almanaque(String(+y-1));$('#al-b').onclick=()=>almanaque(String(+y+1));$$('[data-alm]').forEach(b=>b.onclick=()=>mesCompras(b.dataset.alm))}
+function mesCompras(k){const C=comprasMes(k),inv=esInv(),D=Object.values(M.d).filter(d=>esFactura(d)&&d.fecha.slice(0,7)===k).sort((a,b)=>a.fecha<b.fecha?-1:1),T=inv?null:tartasEstimadas(C);
+  const fila=(n,x)=>'<div class="row"><span>'+esc(n)+'</span><b>'+(x.q>0?esc(fmtSt(x.q,x.u,n)):'')+(x.eur>0&&!inv?(x.q>0?' · ':'')+eur(x.eur):'')+'</b></div>';
+  const bloque=(t,g)=>{const K=Object.keys(g).sort((a,b)=>(g[b].eur||0)-(g[a].eur||0));return K.length?'<h3>'+t+'</h3><div class="card c-num">'+K.map(n=>fila(n,g[n])).join('')+'</div>':''};
+  sheet('<h2>'+esc(monthName(k))+'</h2><button class="btn pri big" id="mc-add">+ Añadir facturas de este mes</button><div class="hint">Puedes elegir varias fotos o PDF a la vez. La IA lee cada una (proveedor, fecha, total y productos).</div><div id="mc-prog"></div>'+
+    (C.n?(T?'<div class="card o-mes"><span class="small muted">Con '+esc(fmtSt(T.q,'g',T.ing))+' de '+esc(T.ing.toLowerCase())+' y tu receta</span><b>Unas '+T.n+' tartas</b></div>':'')+
+      (inv?'':'<div class="card c-num"><div class="row"><span>Gastado en compras</span><b>'+eur(C.total)+'</b></div><div class="row"><span>Papeles</span><b>'+C.n+'</b></div></div>')+
+      bloque('Ingredientes',C.ing)+bloque('Envases',C.env)+bloque('Otras cosas',C.otro)+
+      (C.sinLineas?'<p class="small muted">'+C.sinLineas+(C.sinLineas===1?' papel no tiene':' papeles no tienen')+' los productos leídos (solo cuenta el total).</p>':'')+
+      '<h3>Papeles de '+esc(monthName(k).toLowerCase())+'</h3>'+D.map(cardDoc).join(''):'<div class="empty"><b>Sin facturas en este mes</b>Añádelas con el botón de arriba.</div>')+
+    '<button class="btn full" id="mc-v" style="margin-top:12px">‹ Volver al almanaque</button>');
+  fillThumbs($('#sheet'));$('#mc-v').onclick=()=>almanaque(k.slice(0,4));$('#mc-add').onclick=()=>subirVarias(k)}
+/* ---- subir varias facturas de golpe ---- */
+function leerArchivo(f){if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){if(f.size>MAX_PDF)return Promise.reject(new Error('grande'));
+    return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const d=String(r.result).replace(/^data:[^;]*;/,'data:application/pdf;');/^data:application\/pdf;base64,/.test(d)?res({d:d,ia:d}):rej(new Error('pdf'))};r.onerror=()=>rej(new Error('pdf'));r.readAsDataURL(f)})}
+  if(/^image\//.test(f.type))return compress(f).then(d=>(iaOn()&&!CLOUD?compress(f,1568,0.8).catch(()=>d):Promise.resolve(d)).then(ia=>({d:d,ia:ia})));return Promise.reject(new Error('tipo'))}
+function subirVarias(k){let inp=$('#alm-in');if(!inp){inp=document.createElement('input');inp.type='file';inp.id='alm-in';inp.multiple=true;inp.hidden=true;inp.accept='image/*,application/pdf';document.body.appendChild(inp)}
+  inp.value='';inp.onchange=()=>{const F=[...(inp.files||[])].slice(0,40);if(!F.length)return;const pr=$('#mc-prog'),btn=$('#mc-add');if(btn)btn.disabled=true;
+    let hechas=0,rep=0,mal=0,fuera=0,sinIA=0;const pinta=t=>{if(pr)pr.innerHTML='<div class="card al-prog"><b>'+t+'</b><div class="d-bar"><i style="width:'+Math.round(hechas/F.length*100)+'%"></i></div></div>'};
+    pinta('Leyendo 1 de '+F.length+'…');
+    F.reduce((p,f,i)=>p.then(()=>leerArchivo(f).then(x=>{const hs=huella(x.d);if(Object.values(M.d).some(d=>d.hash===hs)){rep++;return}
+        const lee=iaOn()?leerIA(x.ia,'doc').then(datosDocIA).catch(()=>null):Promise.resolve(null);
+        return lee.then(r=>{if(!r)sinIA++;const fecha=r&&r.fecha?r.fecha:k+'-01';if(r&&r.fecha&&r.fecha.slice(0,7)!==k)fuera++;
+          const o={id:uid(),tipo:r&&r.tipo==='Albarán'?'Albarán':'Factura',nombre:f.name.replace(/\.[a-z0-9]+$/i,'').slice(0,60),fecha:fecha,provId:'',provNombre:r&&r.proveedor||'',total:r&&r.total!=null?r.total:null,lineas:r?r.lineas:[],hash:hs,ts:Date.now()};
+          if(r&&r.numero)o.num=r.numero;if(r&&r.cif)o.cifLeido=r.cif;if(r&&r.rgseaa)o.rsLeido=r.rgseaa;if(!(r&&r.fecha))o.fechaAprox=true;
+          return saveFoto('doc_'+o.id,x.d).then(()=>saveRec('d',o))})}).catch(()=>{mal++}).then(()=>{hechas++;pinta(hechas<F.length?'Leyendo '+(hechas+1)+' de '+F.length+'…':'Hecho')})),Promise.resolve())
+    .then(()=>{const ok=F.length-rep-mal;toast(ok+(ok===1?' papel guardado':' papeles guardados')+(rep?' · '+rep+' ya los tenías':'')+(mal?' · '+mal+' no se pudieron leer':''));
+      mesCompras(k);const pr2=$('#mc-prog');if(pr2&&(fuera||sinIA))pr2.innerHTML='<div class="hint">'+(fuera?fuera+(fuera===1?' era':' eran')+' de otro mes según su fecha y '+(fuera===1?'ha ido':'han ido')+' a su mes. ':'')+(sinIA?sinIA+' sin leer: '+(sinIA===1?'tiene':'tienen')+' fecha del día 1; ábrelas para revisarlas.':'')+'</div>'})};
+  inp.click()}
+/* accesos: en Papeles, en Contabilidad y en Proveedores */
+const vConta2=vConta;vConta=function(){const h=vConta2();if(esInv()||!abierto())return h;return h.replace('<div class="c-g">','<div class="c-g"><button class="card o-mes" data-act="almanaque"><span class="small muted">Facturas de meses anteriores</span><b>Almanaque de compras</b></button>')};
+const vProveedores0=vProveedores;vProveedores=function(){return vProveedores0()+(esInv()?'':'<button class="btn full" data-act="almanaque" style="margin-top:10px">Almanaque de compras (meses anteriores)</button>')};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="almanaque"]');if(a){e.stopPropagation();almanaque()}},true);
+const vDocs0=typeof vDocs==='function'?vDocs:null;
+if(vDocs0)vDocs=function(){const h=vDocs0();return esInv()?h:'<button class="btn full al-btn" data-act="almanaque">📅 Almanaque: meter facturas de otros meses</button>'+h};
+
+/* ===== Buscar el CIF y el registro sanitario en las facturas que ya tienes guardadas ===== */
+function provsSinDatos(){return provs().filter(p=>!p.inactivo&&(!String(p.cif||'').trim()||!String(p.rgseaa||'').trim())&&Object.values(M.d).some(d=>d.provId===p.id&&esFactura(d)))}
+function buscarCifs(){if(!iaOn()){toast('Para esto tiene que estar activada la IA (Ajustes)');return}const P=provsSinDatos();if(!P.length){toast('Todos tus proveedores ya tienen CIF y registro');return}
+  sheet('<h2>Buscar CIF/DNI y registro sanitario</h2><p class="small muted" style="margin-top:0">Leo la última factura de cada proveedor al que le falta. '+P.length+(P.length===1?' proveedor':' proveedores')+'.</p><div id="bc-p"></div>');
+  let n=0,hall=0;const pinta=t=>{const e=$('#bc-p');if(e)e.innerHTML='<div class="card al-prog"><b>'+esc(t)+'</b><div class="d-bar"><i style="width:'+Math.round(n/P.length*100)+'%"></i></div></div>'};pinta('Empezando…');
+  P.reduce((pr,p)=>pr.then(()=>{pinta('Leyendo '+p.nombre+'…');const D=Object.values(M.d).filter(d=>d.provId===p.id&&esFactura(d)).sort((a,b)=>a.fecha<b.fecha?1:-1).slice(0,2);
+      return D.reduce((q,d)=>q.then(ya=>ya?ya:fotoData('doc_'+d.id).then(f=>f?leerIA(CLOUD?f:f,'doc').then(datosDocIA).catch(()=>null):null).then(r=>{
+        if(!r||(!r.cif&&!r.rgseaa))return null;const o=Object.assign({},d,{ts:Date.now()});if(r.cif)o.cifLeido=r.cif;if(r.rgseaa)o.rsLeido=r.rgseaa;
+        return saveRec3('d',o).then(()=>rellenarProv(p.id,[o])).then(x=>{if(x)hall++;return true})})),Promise.resolve(null)).then(()=>{n++})}),Promise.resolve())
+  .then(()=>{pinta('Hecho');const e=$('#bc-p');if(e)e.insertAdjacentHTML('beforeend','<p>'+(hall?'He completado '+hall+(hall===1?' proveedor.':' proveedores.'):'No he encontrado CIF, DNI ni registro en esas facturas.')+'</p><p class="small muted">Lo que no salga en la factura tendrás que ponerlo a mano en el proveedor.</p>');render()})}
+const vProveedores1=vProveedores;
+vProveedores=function(){const h=vProveedores1();if(esInv()||!iaOn())return h;const n=provsSinDatos().length;
+  return n?h.replace('<div id="pv-l">','<button class="btn full pv-cif" data-act="buscar-cif">🔎 Buscar CIF/DNI y registro en tus facturas ('+n+')</button><div id="pv-l">'):h};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="buscar-cif"]');if(a)buscarCifs()});
+/* limpiar lo que llega */
+if(typeof sanear==='function'){const sanear4=sanear;sanear=function(k,d){d=sanear4(k,d);if(d&&k==='d'){if(d.cifLeido!=null)d.cifLeido=String(d.cifLeido).slice(0,20);if(d.rsLeido!=null)d.rsLeido=String(d.rsLeido).slice(0,24)}return d}}
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
