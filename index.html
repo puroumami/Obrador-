@@ -359,6 +359,7 @@ html,body{overscroll-behavior-y:none}
 .hoja-nota{margin:6px 0 0;font-size:12px;color:#8C5A12}.hoja-nota p{margin:2px 0}
 .va-h,.va-f{display:grid;grid-template-columns:86px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center}.va-h span{font-size:11px;font-weight:700;color:#7A6A5E;text-transform:uppercase}.va-f{padding:5px 0}.va-f small{grid-column:2/4;font-size:11px;color:#7A6A5E}
 .va-btn{margin-bottom:10px;border:2px solid var(--caramelo)!important;font-weight:700}
+.pd-btn{margin:0 0 10px}.pd-l{display:flex;flex-direction:column;gap:6px;margin-top:6px}.pd-i{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line,#ddd);border-radius:12px;margin:0;font-weight:500}.pd-i input{width:22px;height:22px;flex:none;margin:0}.pd-i span{flex:1}.pd-i small{color:var(--muted,#777)}.pd-paso{margin:-4px 0 10px}.ver-av{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;padding:14px;border-radius:14px;border:0;background:#1d6b45;color:#fff;font:inherit;font-size:15px;box-shadow:0 6px 20px rgba(0,0,0,.25)}.ver-pie{text-align:center;margin:18px 0 6px}.lnk{background:none;border:0;padding:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer}.ver-card{margin-top:14px}
 .sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug:empty{display:none}.sug .sg{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--mantequilla);color:var(--cacao);font:600 14px var(--f-body);cursor:pointer}.sug .sg.otro{background:var(--surface);color:var(--muted)}
 .al-si .al-d{display:block;font-weight:600;font-size:11px;color:var(--muted)}
 .al-comun{background:var(--cacao);color:var(--crema);border-radius:16px;padding:12px 14px;margin:4px 0 12px}.al-comun b{font:700 17px/1.2 var(--f-display)}
@@ -4077,6 +4078,72 @@ const vConta6=vConta;vConta=function(){const h=vConta6();if(esInv()||!abierto())
   return i>=0?h.slice(0,i)+b+h.slice(i):h.replace('<div class="c-g">',b+'<div class="c-g">')};
 const almanaque0=almanaque;almanaque=function(y){almanaque0(y);if(esInv())return;const g=$('.al-g');if(g)g.insertAdjacentHTML('beforebegin','<button class="btn full va-btn" data-act="ventas-ant" style="margin-bottom:10px">💳 Poner ventas de meses anteriores</button>')};
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ventas-ant"]');if(a){e.stopPropagation();ventasAnterioresSheet()}},true);
+
+/* ===== Versión y botón «Actualizar» ===== */
+/*VER:2026.11.11-4*/
+const VER_APP=(()=>{try{const m=document.documentElement.innerHTML.match(new RegExp('/\\*V'+'ER:([^*]+)\\*/'));return m?m[1]:'?'}catch(e){return '?'}})();
+const enWebPub=()=>'serviceWorker' in navigator&&(/github\.io$/.test(location.hostname)||location.hostname==='localhost');
+let verNueva=null,verMirada=0;
+function mirarVersion(forzar){if(!enWebPub())return Promise.resolve(null);const ah=Date.now();if(!forzar&&ah-verMirada<10*60*1000)return Promise.resolve(verNueva);verMirada=ah;
+  return fetch('./index.html?nv='+ah,{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(new RegExp('/\\*V'+'ER:([^*]+)\\*/'));verNueva=m&&m[1]!==VER_APP?m[1]:null;pintarAvisoVer();return verNueva}).catch(()=>null)}
+function pintarAvisoVer(){let b=$('#ver-av');if(!verNueva||(typeof esInv==='function'&&esInv())){if(b)b.remove();return}
+  if(!b){b=document.createElement('button');b.id='ver-av';b.className='ver-av';b.type='button';b.onclick=actualizarYa;document.body.appendChild(b)}
+  b.innerHTML='✨ Hay una versión nueva de la app · <b>Actualizar</b>'}
+function actualizarYa(){toast('Actualizando…');const fin=()=>{try{location.replace(location.pathname+'?v='+Date.now())}catch(e){location.reload()}};
+  const borrar=window.caches?caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x)))):Promise.resolve();
+  const sw=navigator.serviceWorker&&navigator.serviceWorker.getRegistration?navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}):Promise.resolve();
+  Promise.all([borrar.catch(()=>{}),sw]).then(fin,fin)}
+function tarjetaVersion(){return '<div class="card ver-card"><div class="th"><b>Versión de la app</b><span class="pill">'+esc(VER_APP)+'</span></div>'+
+  '<div class="small muted" id="ver-txt">'+(verNueva?'Hay una nueva: '+esc(verNueva):'Toca el botón para comprobar si hay una nueva.')+'</div><button class="btn full" id="ver-btn" style="margin-top:8px">'+(verNueva?'Actualizar ahora':'Buscar actualización')+'</button></div>'}
+function montarVersion(){const b=$('#ver-btn');if(!b)return;b.onclick=()=>{if(verNueva){actualizarYa();return}b.textContent='Mirando…';
+  mirarVersion(true).then(v=>{const t=$('#ver-txt');if(v){if(t)t.textContent='Hay una nueva: '+v;b.textContent='Actualizar ahora'}else{if(t)t.textContent=enWebPub()?'Ya tienes la última.':'Aquí no se puede comprobar.';b.textContent='Buscar actualización';
+    /* aunque diga que es la última, si el usuario insiste, recargamos limpio */
+    b.onclick=actualizarYa;b.textContent='Recargar de todas formas'}})}}
+const ajustes4=ajustes;
+ajustes=function(){const r=ajustes4.apply(this,arguments);if(!esInv()){const s=$('#sheet');if(s&&!$('#ver-btn')){s.insertAdjacentHTML('beforeend',tarjetaVersion());montarVersion()}}return r};
+const vMenu4=vMenu;
+vMenu=function(){return vMenu4()+'<p class="small muted ver-pie">Versión '+esc(VER_APP)+(verNueva?' · <button class="lnk" data-act="ver-act">hay una nueva, actualizar</button>':'')+'</p>'};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ver-act"]');if(a)actualizarYa()});
+setTimeout(()=>mirarVersion(true),2500);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')mirarVersion(false)});
+
+/* ===== Apuntar un pedido entero de una vez ===== */
+const iaPd=()=>window.__iaPd!=null?!!window.__iaPd:iaOn();
+function cantPedido(ing,L){let g=0,u=0,lit=false;L.forEach(l=>{const c=cantLinea(l);if(!c)return;if(c.u==='g'){g+=c.q;if(l.ud==='L'||l.ud==='ml')lit=true}else u+=c.q});
+  const fija=udFija(ing);if(fija==='ud')return u>0?{cant:u,ud:'ud'}:null;
+  if(g>0)return {cant:Math.round(g/10)/100,ud:lit?'L':'kg'};if(u>0)return {cant:u,ud:'ud'};return null}
+function txtQ(q){return q?String(q.cant).replace('.',',')+' '+(q.ud==='ud'?'ud':q.ud):''}
+function pedidoSheet(){if(esInv())return;const I=M.cfg.ingredientes||[];let fac=null,arch='img',leido=null,Q={};
+  sheet('<h2>Me ha llegado un pedido</h2><p class="small muted" style="margin-top:0">'+(iaPd()?'Hazle una foto a la factura o al albarán: marco lo que trae y te voy pidiendo cada producto ya rellenado. Tú solo haces la foto del lote.':'Marca lo que te ha llegado y te lo voy pidiendo uno detrás de otro, con el proveedor ya puesto.')+'</p>'+
+    '<button type="button" class="btn '+(iaPd()?'pri ':'')+'big" id="pd-fac">📷 Foto de la factura o albarán'+(iaPd()?'':' (opcional)')+'</button><div id="pd-st" class="small" style="margin-top:6px"></div><img id="pd-img" class="bigphoto" hidden alt="Factura">'+
+    '<label for="pd-prov">Proveedor</label>'+provSelect('pd-prov','')+
+    '<label style="margin-top:14px">¿Qué te ha llegado?</label><div class="pd-l">'+I.map(i=>'<label class="pd-i"><input type="checkbox" value="'+esc(i)+'"><span>'+esc(i)+'</span><small data-pdq="'+esc(i)+'"></small></label>').join('')+'</div>'+
+    '<button class="btn pri big" id="pd-go">Empezar</button>');
+  montarProvSelect('pd-prov');
+  $('#pd-fac').onclick=()=>elegirArchivo((d,tipoA,nombre)=>{fac=d;arch=tipoA;leido=null;const im=$('#pd-img');if(tipoA==='img'){im.src=d;im.hidden=false}else im.hidden=true;$('#pd-fac').textContent='Cambiar la factura';
+    const st=$('#pd-st');if(!iaPd()){st.textContent=tipoA==='img'?'':'Adjunto: '+nombre;return}st.className='small live warn';st.textContent='Leyendo la factura…';
+    leerIA(d,'doc').then(datosDocIA).then(r=>{leido=r;if(!$('#pd-st'))return;if(!r){st.className='small live warn';st.textContent='No se pudo leer. Marca tú lo que ha llegado.';return}
+      const G={};(r.lineas||[]).forEach(l=>{const c=claseLinea(l);if(c.k==='ing')(G[c.n]=G[c.n]||[]).push(l)});Q={};
+      Object.keys(G).forEach(i=>{Q[i]=cantPedido(i,G[i]);const cb=$$('.pd-i input').find(x=>x.value===i);if(cb)cb.checked=true;const s=$$('[data-pdq]').find(x=>x.dataset.pdq===i);if(s)s.textContent=Q[i]?txtQ(Q[i]):''});
+      const sel=$('#pd-prov'),pv=(r.cif&&provPorCif(r.cif))||(r.proveedor&&provs().find(p=>exacto(p.nombre,r.proveedor)))||(r.proveedor&&provPorNombre(r.proveedor));
+      if(pv&&sel)sel.value=pv.id;else if(r.proveedor&&sel&&$('#pd-prov-nn')){sel.value='__nuevo';$('#pd-prov-nw').hidden=false;$('#pd-prov-nn').value=limpiaNombre(r.proveedor)}
+      const n=Object.keys(G).length;st.className='small live '+(n?'okc':'warn');st.textContent='Leído: '+(r.tipo==='Albarán'?'albarán':'factura')+(r.proveedor?' de '+r.proveedor:'')+(r.total!=null?' · '+eur(r.total):'')+' · '+(n?n+(n===1?' producto tuyo':' productos tuyos')+' marcados':'no reconozco tus productos, márcalos tú')+'.'},()=>{const s=$('#pd-st');if(s){s.className='small live warn';s.textContent='No se pudo leer. Marca tú lo que ha llegado.'}})});
+  $('#pd-go').onclick=()=>{const sel=$$('.pd-i input').filter(x=>x.checked).map(x=>x.value);if(!sel.length){toast('Marca al menos un producto');return}
+    leerProvSelect('pd-prov').then(pv=>{if(pv===false)return;const guardaFac=()=>{if(!fac)return Promise.resolve();const r=leido||{};
+      const dc={id:uid(),tipo:r.tipo==='Albarán'?'Albarán':'Factura',nombre:'Pedido: '+sel.join(', '),provId:pv?pv.id:'',provNombre:pv?pv.nombre:(r.proveedor||''),fecha:r.fecha||today(),vence:'',archivo:arch,ts:Date.now()};
+      dc.hash=huella(fac);if(r.numero)dc.num=r.numero;if(r.total!=null)dc.total=r.total;if((r.lineas||[]).length)dc.lineas=r.lineas;if(r.cif)dc.cifLeido=r.cif;if(r.rgseaa)dc.rsLeido=r.rgseaa;
+      return confirmarRepetido(dc,fac).then(si=>si?saveFoto('doc_'+dc.id,fac).then(()=>saveRec('d',dc)):null)};
+      return guardaFac().then(()=>pasoPedido(sel,0,pv,Q))}).catch(()=>{})}}
+function pasoPedido(L,i,pv,Q){if(i>=L.length){toast('Pedido apuntado: '+L.length+(L.length===1?' producto':' productos'));render();return}
+  const ing=L[i];formEntrada(ing,null,()=>pasoPedido(L,i+1,pv,Q));
+  const h=$('#sheet h2');if(h)h.insertAdjacentHTML('afterend','<p class="pd-paso"><span class="pill">'+(i+1)+' de '+L.length+'</span>'+(i+1<L.length?' <span class="small muted">luego: '+esc(L[i+1])+'</span>':'')+'</p>');
+  ['#fac-btn','#fac-fn','#fac-ia'].forEach(s=>{const e=$(s);if(e)e.hidden=true});
+  if(pv&&$('#en-prov')&&[...$('#en-prov').options].some(o=>o.value===pv.id))$('#en-prov').value=pv.id;
+  const q=Q&&Q[ing];if(q&&$('#en-q')){$('#en-q').value=String(q.cant).replace('.',',');if($('#en-ud'))$('#en-ud').value=q.ud}
+  const b=$('#en-save');if(b&&i+1<L.length)b.textContent='Guardar y seguir con '+L[i+1]}
+const vEntradas4=vEntradas;
+vEntradas=function(){const h=vEntradas4();if(esInv())return h;return h.replace('<button class="btn full e-add"','<button class="btn pri big pd-btn" data-act="pedido">📦 Me ha llegado un pedido</button><button class="btn full e-add"')};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="pedido"]');if(a)pedidoSheet()});
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
