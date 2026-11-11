@@ -353,6 +353,12 @@ html,body{overscroll-behavior-y:none}
 .gs-tit{font-size:11px;font-weight:700;color:#7A6A5E;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 4px}.gs-mes{display:flex;align-items:center;justify-content:space-between;margin:10px 0 2px}.gs-mes b{font:600 16px var(--f-display);text-transform:capitalize}
 .gs-it{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;border-top:1px solid #F3EBD0;background:transparent;padding:9px 0;font-family:var(--f-body);color:var(--ink)}.gs-it span{min-width:0}.gs-it b{display:block;font-size:14.5px}.gs-it small{display:block;font-size:12px;color:#7A6A5E}.gs-it em{font-style:normal;font-weight:700;white-space:nowrap;font-size:13px}.gs-nada{padding:8px 0}
 .ic-r{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.ic-card{background:#43302E!important;color:#FFFFEE}.ic-card .muted{color:#C2C395!important}
+.pv-pend{margin-bottom:10px;background:#F5D9A8!important}
+.eq{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #EFE7CC}.eq b{display:block}.eq.off{opacity:.8}
+.eq-acc{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.eq-nota{margin:6px 0}
+.hoja-nota{margin:6px 0 0;font-size:12px;color:#8C5A12}.hoja-nota p{margin:2px 0}
+.va-h,.va-f{display:grid;grid-template-columns:86px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center}.va-h span{font-size:11px;font-weight:700;color:#7A6A5E;text-transform:uppercase}.va-f{padding:5px 0}.va-f small{grid-column:2/4;font-size:11px;color:#7A6A5E}
+.va-btn{margin-bottom:10px;border:2px solid var(--caramelo)!important;font-weight:700}
 .sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug:empty{display:none}.sug .sg{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--mantequilla);color:var(--cacao);font:600 14px var(--f-body);cursor:pointer}.sug .sg.otro{background:var(--surface);color:var(--muted)}
 .al-si .al-d{display:block;font-weight:600;font-size:11px;color:var(--muted)}
 .al-comun{background:var(--cacao);color:var(--crema);border-radius:16px;padding:12px 14px;margin:4px 0 12px}.al-comun b{font:700 17px/1.2 var(--f-display)}
@@ -3488,7 +3494,14 @@ function rellenarProv(pid,docs){const r=colaProv.then(()=>{const L=JSON.parse(JS
   if(!cambia.length)return null;x.ts=Date.now();return guardarProvs(L).then(()=>{toast(x.nombre+': '+cambia.join(' y ')+' apuntado'+(cambia.length>1?'s':''));return x})});colaProv=r.catch(()=>{});return r}
 /* ---- preguntar antes de añadir un proveedor nuevo ---- */
 const colaPreg=[];let preguntando=false;const noAhora=new Set();
-function preguntarProv(nombre){const k=normProv(nombre);if(!k||noAhora.has(k)||colaPreg.some(x=>normProv(x)===k))return;colaPreg.push(limpiaNombre(nombre));siguientePreg()}
+/* nombres que no son proveedores (no se pregunta nunca más) y nombres ya preguntados (se quedan en «Pendientes») */
+const provIgn=()=>Array.isArray(M.cfg.provIgnorados)?M.cfg.provIgnorados:[];
+const esIgnorado=n=>provIgn().includes(normProv(n));
+const yaPreg=()=>{try{return JSON.parse(localStorage.getItem('os_provPreg')||'[]')}catch(e){return []}};
+const marcarPreg=k=>{try{const L=yaPreg();if(!L.includes(k)){L.push(k);localStorage.setItem('os_provPreg',JSON.stringify(L.slice(-300)))}}catch(e){}};
+function preguntarProv(nombre,forzar){const k=normProv(nombre);if(!k||esIgnorado(nombre)||colaPreg.some(x=>normProv(x)===k))return;if(!forzar&&(noAhora.has(k)||yaPreg().includes(k)))return;colaPreg.push(limpiaNombre(nombre));siguientePreg()}
+function ignorarProv(nombre){const k=normProv(nombre);if(!k)return Promise.resolve();const L=provIgn().concat([k]).filter((x,i,a)=>a.indexOf(x)===i).slice(-200);return saveCfg(Object.assign({},M.cfg,{provIgnorados:L}))}
+const provPendientes=()=>{const G={};Object.values(M.d).forEach(d=>{if(d.provId&&provDe(d.provId))return;const n=String(d.provNombre||'').trim();if(!n||esIgnorado(n))return;const k=normProv(n);(G[k]=G[k]||{n:n,c:0}).c++});return Object.values(G)};
 function siguientePreg(){if(preguntando||!colaPreg.length)return;const dlg=$('#dlg');if(dlg&&dlg.open){setTimeout(siguientePreg,700);return}
   const nombre=colaPreg.shift(),k=normProv(nombre),D=Object.values(M.d).filter(d=>!d.provId&&d.provNombre&&normProv(d.provNombre)===k);
   if(!D.length){siguientePreg();return}preguntando=true;const cifD=(D.find(d=>d.cifLeido)||{}).cifLeido,cand=provPorCif(cifD)||provPorNombre(nombre),trae=[...new Set(D.flatMap(traeDe))];
@@ -3497,14 +3510,15 @@ function siguientePreg(){if(preguntando||!colaPreg.length)return;const dlg=$('#d
     '<label for="pq-n" style="margin-top:0">Nombre del proveedor</label><input id="pq-n" value="'+esc(nombre)+'" autocomplete="off"><div class="hint">Corrígelo si la foto no se leyó bien.</div>'+
     '<button class="btn '+(cand?'':'pri ')+'big" id="pq-si">Añadir proveedor nuevo</button>'+
     (provs().length?'<label for="pq-e">…o es uno que ya tengo</label><select id="pq-e"><option value="">— Elegir —</option>'+provs().filter(p=>!p.inactivo).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.nombre)+'</option>').join('')+'</select>':'')+
-    '<button class="btn full" id="pq-no" style="margin-top:12px">Ahora no</button>');
+    '<button class="btn full" id="pq-no" style="margin-top:12px">Ahora no (lo decido luego en Proveedores)</button><button class="btn full" id="pq-ign" style="margin-top:8px">No es proveedor, no preguntar más</button>');
   const fin=()=>{preguntando=false;setTimeout(siguientePreg,300)};const dlgEl=$('#dlg'),alCerrar=()=>{dlgEl.removeEventListener('close',alCerrar);noAhora.add(k);fin()};dlgEl.addEventListener('close',alCerrar);
   const unir=p=>Promise.all(D.map(d=>saveRec3('d',Object.assign({},d,{provId:p.id,provNombre:p.nombre,ts:Date.now()})))).then(()=>rellenarProv(p.id,D)).then(()=>{dlgEl.removeEventListener('close',alCerrar);closeSheet();toast('Unido a '+p.nombre+'. Ya te sale al registrar productos.');fin()});
   if($('#pq-cand'))$('#pq-cand').onclick=()=>asegurarProv(cand.nombre,trae).then(unir).catch(()=>{});
   $('#pq-si').onclick=()=>{const n=limpiaNombre($('#pq-n').value);if(!n){toast('Escribe el nombre');return}const ya=provs().find(p=>exacto(p.nombre,n));
     (ya?asegurarProv(ya.nombre,trae):crearProv(n,trae)).then(unir).catch(()=>{})};
   if($('#pq-e'))$('#pq-e').onchange=()=>{const p=provDe($('#pq-e').value);if(p)asegurarProv(p.nombre,trae).then(unir).catch(()=>{})};
-  $('#pq-no').onclick=()=>{closeSheet()}}
+  $('#pq-no').onclick=()=>{closeSheet()};
+  $('#pq-ign').onclick=()=>ignorarProv(nombre).then(()=>{dlgEl.removeEventListener('close',alCerrar);closeSheet();toast('Vale, no te pregunto más por «'+nombre+'»');fin()}).catch(()=>{})}
 function crearProv(nombre,trae){const r=colaProv.then(()=>{const L=JSON.parse(JSON.stringify(M.cfg.proveedores||[]));
   const p={id:'pv'+uid(),nombre:limpiaNombre(nombre),suministra:(trae||[]).join(', ').slice(0,200),cif:'',rgseaa:'',telefono:'',email:'',contacto:'',direccion:'',notas:'Añadido desde una factura',ts:Date.now()};
   L.push(p);return guardarProvs(L).then(()=>p)});colaProv=r.catch(()=>{});return r}
@@ -3948,6 +3962,121 @@ avisos=function(){const A=avisos8();if(enInsp()||esInv())return A;const t=today(
   return A};
 const irAviso3=irAviso;irAviso=function(d){if(d.infm){closeSheet();informeCuentasSheet([d.infm+'-01',finMes(d.infm)]);return}return irAviso3(d)};
 const verAvisos3=verAvisos;verAvisos=function(){verAvisos3();const A=avisos();$$('#sheet [data-act="av-go"]').forEach((b,i)=>{const a=A[i];if(a&&a.infm)b.dataset.infm=a.infm})};
+
+/* ===== Proveedores pendientes y borrar; equipos sin temperatura; temperaturas de días anteriores; meses sin registro ===== */
+/* ---------- Proveedores ---------- */
+const vProveedores2=vProveedores;
+vProveedores=function(){const h=vProveedores2();if(esInv())return h;const P=provPendientes();if(!P.length)return h;
+  const card='<div class="card pv-pend"><b>Pendientes de decidir ('+P.length+')</b><div class="small muted">Nombres leídos en tus facturas que aún no son proveedores.</div>'+
+    P.map(x=>'<button class="rv-row" data-pvpend="'+esc(x.n)+'"><span>'+esc(x.n)+'</span><span class="small">'+x.c+(x.c===1?' papel':' papeles')+' · decidir ›</span></button>').join('')+'</div>';
+  return h.replace('<div id="pv-l">',card+'<div id="pv-l">')};
+/* borrar desde la ficha: sus facturas quedan sin proveedor y no se vuelve a proponer */
+const verProveedor1=verProveedor;
+verProveedor=function(pid){verProveedor1(pid);const p=provDe(pid),sh=$('#sheet');if(!p||!sh||esInv())return;
+  sh.insertAdjacentHTML('beforeend','<button class="btn danger full" id="pv-borra" style="margin-top:10px">Borrar este proveedor</button><div class="hint">Sus facturas se quedan guardadas, pero sin proveedor, y no te volverá a preguntar por él.</div>');
+  confirmBtn($('#pv-borra'),'Pulsa otra vez para borrarlo',()=>borrarProv(pid))};
+function borrarProv(pid){const p=provDe(pid);if(!p)return;const D=Object.values(M.d).filter(d=>d.provId===pid);
+  guardarProvs((M.cfg.proveedores||[]).filter(x=>x.id!==pid)).then(()=>ignorarProv(p.nombre))
+  .then(()=>Promise.all(D.map(d=>saveRec3('d',Object.assign({},d,{provId:'',provNombre:d.provNombre||p.nombre,ts:Date.now()})))))
+  .then(()=>{closeSheet();toast('Proveedor borrado');render()}).catch(()=>{})}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-pvpend]');if(b)preguntarProv(b.dataset.pvpend,true)});
+
+/* ---------- Equipos sin temperatura (arcón de almacén, nevera fuera de uso…) ---------- */
+const fuera=()=>Array.isArray(M.cfg.camarasFuera)?M.cfg.camarasFuera:[];
+const TXT_FUERA=['Uso como almacén','Fuera de uso','Desconectado','En reparación'];
+function equiposSheet(){if(esInv()){toast('Solo el administrador');return}const A=M.cfg.camaras||[],F=fuera();
+  sheet('<h2>Equipos de frío</h2><p class="small muted" style="margin-top:0">Si un equipo no se usa para guardar en frío (por ejemplo, un arcón que usas de almacén), ponlo «sin temperatura»: no te la pedirá y en el informe de Sanidad saldrá tu texto.</p>'+
+    A.map(c=>'<div class="eq"><div><b>'+esc(c.nombre)+'</b><span class="small muted">'+c.min+' a '+c.max+' °C · se apunta cada día</span></div><button class="btn sm" data-eqoff="'+esc(c.id)+'">Sin temperatura</button></div>').join('')+
+    (F.length?'<h3>Sin temperatura</h3>'+F.map(c=>'<div class="eq off"><div><b>'+esc(c.nombre)+'</b><span class="small muted">'+esc(c.txt||'Sin temperatura')+' desde el '+fdate(c.desde)+'</span></div><button class="btn sm" data-eqon="'+esc(c.id)+'">Volver a usar</button></div>').join(''):''));
+  $$('[data-eqoff]').forEach(b=>b.onclick=()=>equipoFueraSheet(b.dataset.eqoff));
+  $$('[data-eqon]').forEach(b=>b.onclick=()=>{const c=fuera().find(x=>x.id===b.dataset.eqon);if(!c)return;if(A.length+1>8){toast('Máximo 8 equipos');return}
+    const vuelve={id:c.id,nombre:c.nombre,min:c.min,max:c.max};saveCfg(Object.assign({},M.cfg,{camaras:(M.cfg.camaras||[]).concat([vuelve]),camarasFuera:fuera().filter(x=>x.id!==c.id),
+      camarasHist:(M.cfg.camarasHist||[]).concat([{id:c.id,nombre:c.nombre,txt:c.txt,desde:c.desde,hasta:sumarDias(today(),-1)}]).slice(-40)})).then(()=>{toast(c.nombre+': vuelve a pedir temperatura');equiposSheet();render()}).catch(()=>{})})}
+function equipoFueraSheet(id){const c=(M.cfg.camaras||[]).find(x=>x.id===id);if(!c)return;
+  sheet('<h2>'+esc(c.nombre)+' sin temperatura</h2><label>¿Qué pone en el informe?</label><div class="cj-dias">'+TXT_FUERA.map((t,i)=>'<button type="button" class="chip'+(i?'':' on')+'" data-tf="'+esc(t)+'">'+esc(t)+'</button>').join('')+'</div>'+
+    '<label for="ef-t">O escríbelo tú</label><input id="ef-t" value="'+esc(TXT_FUERA[0])+'" maxlength="80">'+
+    '<label for="ef-d">Desde qué día</label><input id="ef-d" type="date" value="'+today()+'" max="'+today()+'">'+
+    '<button class="btn pri big" id="ef-s">Guardar</button><div class="hint">Si un día vuelve a funcionar, lo cambias en «Equipos de frío › Volver a usar».</div>');
+  $$('[data-tf]').forEach(b=>b.onclick=()=>{$$('[data-tf]').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#ef-t').value=b.dataset.tf});
+  $('#ef-s').onclick=()=>{const t=$('#ef-t').value.trim()||'Sin temperatura',d=$('#ef-d').value||today();if((M.cfg.camaras||[]).length<2){toast('Tiene que quedar al menos un equipo con temperatura');return}
+    saveCfg(Object.assign({},M.cfg,{camaras:M.cfg.camaras.filter(x=>x.id!==id),camarasFuera:fuera().concat([{id:c.id,nombre:c.nombre,min:c.min,max:c.max,txt:t.slice(0,80),desde:d}])}))
+    .then(()=>{toast(c.nombre+': '+t);equiposSheet();render()}).catch(()=>{})}}
+/* ---------- Temperaturas de un día anterior (lo que tengas anotado), queda marcado cuándo se apuntó ---------- */
+function otroDiaSheet(f){if(esInv()){toast('Solo el administrador');return}f=f||sumarDias(today(),-1);const C=M.cfg.camaras||[];
+  sheet('<h2>Temperaturas de otro día</h2><p class="small muted" style="margin-top:0">Para pasar lo que tengas anotado en papel o en el termómetro. En el registro quedará que se apuntó hoy, para que sea transparente.</p>'+
+    '<label for="od-f">Día</label><input id="od-f" type="date" value="'+f+'" max="'+sumarDias(today(),-1)+'">'+
+    '<div class="card" style="margin-top:10px">'+C.map(c=>{const r=M.c[f+'_'+c.id];return '<div class="cam"><div><b>'+esc(c.nombre)+'</b><div class="small muted">'+c.min+' a '+c.max+' °C'+(r?' · ya tiene '+esc(r.v)+' °C':'')+'</div></div><input id="od-'+esc(c.id)+'" inputmode="decimal" placeholder="°C" value="'+(r?esc(r.v):'')+'" aria-label="Temperatura de '+esc(c.nombre)+'"></div>'}).join('')+'</div>'+
+    '<div class="two"><div><label for="od-h">Hora de la lectura</label><input id="od-h" type="time" value="10:00"></div><div></div></div>'+
+    '<label for="od-a">Si alguna estaba fuera de rango, ¿qué se hizo?</label><input id="od-a">'+
+    '<button class="btn pri big" id="od-s">Guardar ese día</button><button class="btn full" id="od-sig" style="margin-top:8px">Guardar y pasar al día siguiente</button>');
+  $('#od-f').onchange=()=>{const v=$('#od-f').value;if(/^\d{4}-\d{2}-\d{2}$/.test(v)&&v<today())otroDiaSheet(v)};
+  const guarda=sig=>{const d=$('#od-f').value,h=$('#od-h').value||'10:00',acc=$('#od-a').value.trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d>=today()){toast('Elige un día anterior a hoy');return}
+    const ps=[];let mal=false;C.forEach(c=>{const v=num($('#od-'+c.id).value);if(v==null)return;const ok=v>=c.min&&v<=c.max;if(!ok)mal=true;const r=M.c[d+'_'+c.id];
+      if(r&&r.v===v)return;ps.push(saveRec('c',{id:d+'_'+c.id,fecha:d,hora:h,cam:c.id,camNombre:c.nombre,v:v,ok:ok,accion:ok?'':acc,obs:'Anotada el '+fdate(today()),anotada:today()}))});
+    if(mal&&!acc){toast('Escribe qué se hizo con la que estaba fuera de rango');$('#od-a').focus();return}
+    if(!ps.length){toast('Escribe alguna temperatura');return}
+    Promise.all(ps).then(()=>{toast('Guardado el '+fshort(d));const n=sumarDias(d,1);if(sig&&n<today())otroDiaSheet(n);else{closeSheet();render()}}).catch(()=>{})};
+  $('#od-s').onclick=()=>guarda(false);$('#od-sig').onclick=()=>guarda(true)}
+/* ---------- Meses sin registro: una nota que sale en el informe y en la hoja del mes ---------- */
+const sinReg=()=>Array.isArray(M.cfg.sinRegistro)?M.cfg.sinRegistro:[];
+function sinRegSheet(){if(esInv())return;const L=sinReg(),k=today().slice(0,7);
+  sheet('<h2>Meses sin registro</h2><p class="small muted" style="margin-top:0">Si en unos meses no se apuntaban las temperaturas, déjalo escrito. Es lo honrado y es lo que le sirve al inspector.</p>'+
+    (L.length?'<div class="card c-num">'+L.map((x,i)=>'<div class="row"><span>'+fdate(x.desde)+' a '+fdate(x.hasta)+'<small style="display:block;font-size:12px;color:#7A6A5E">'+esc(x.txt)+'</small></span><button class="btn sm" data-srdel="'+i+'">Quitar</button></div>').join('')+'</div>':'')+
+    '<div class="two"><div><label for="sr-d">Desde</label><input id="sr-d" type="date" value="'+mesMas(k,-3)+'-01"></div><div><label for="sr-h">Hasta</label><input id="sr-h" type="date" value="'+finMes(mesMas(k,-1))+'"></div></div>'+
+    '<label for="sr-t">Nota</label><textarea id="sr-t" rows="3">No se llevaba registro de temperaturas en este periodo. Se lleva al día desde '+esc(monthName(k).toLowerCase())+'.</textarea>'+
+    '<button class="btn pri big" id="sr-s">Guardar nota</button>');
+  $$('[data-srdel]').forEach(b=>b.onclick=()=>{const n=sinReg().slice();n.splice(+b.dataset.srdel,1);saveCfg(Object.assign({},M.cfg,{sinRegistro:n})).then(sinRegSheet).catch(()=>{})});
+  $('#sr-s').onclick=()=>{let d=$('#sr-d').value,h=$('#sr-h').value;const t=$('#sr-t').value.trim();if(!d||!h||!t){toast('Pon las fechas y la nota');return}if(d>h){const x=d;d=h;h=x}
+    saveCfg(Object.assign({},M.cfg,{sinRegistro:sinReg().concat([{desde:d,hasta:h,txt:t.slice(0,300)}]).slice(-20)})).then(()=>{toast('Nota guardada');sinRegSheet()}).catch(()=>{})}}
+/* ---------- que se vea en la pantalla, en las hojas del mes y en el informe ---------- */
+const vCamara0=vCamara;
+vCamara=function(){let h=vCamara0();if(esInv())return h;const F=fuera();
+  const extra=(F.length?'<div class="small muted eq-nota">'+F.map(c=>esc(c.nombre)+': '+esc(c.txt)+' desde el '+fdate(c.desde)).join(' · ')+'</div>':'')+
+    '<div class="eq-acc"><button class="btn sm" data-act="eq-ver">Equipos de frío</button><button class="btn sm" data-act="eq-otro">Apuntar otro día</button><button class="btn sm" data-act="eq-sinreg">Meses sin registro</button></div>';
+  return h.replace('<div id="cam-acc-w" hidden>',extra+'<div id="cam-acc-w" hidden>')};
+const notasMes=(k,c)=>{const a=k+'-01',b=finMes(k),N=[];sinReg().filter(x=>x.desde<=b&&x.hasta>=a).forEach(x=>N.push(x.txt+' ('+fdate(x.desde)+' a '+fdate(x.hasta)+')'));
+  fuera().filter(x=>x.desde<=b).forEach(x=>N.push(x.nombre+': '+x.txt+' desde el '+fdate(x.desde)+'. No se registra su temperatura.'));
+  (M.cfg.camarasHist||[]).filter(x=>x.desde<=b&&x.hasta>=a).forEach(x=>N.push(x.nombre+': '+x.txt+' del '+fdate(x.desde)+' al '+fdate(x.hasta)+'.'));return N};
+const hojaTemperaturas0=hojaTemperaturas;
+hojaTemperaturas=function(k,c,f){const h=hojaTemperaturas0(k,c,f),N=notasMes(k,c);return N.length?h+'<div class="hoja-nota">'+N.map(n=>'<p>⚠ '+esc(n)+'</p>').join('')+'</div>':h};
+const crearInforme2=crearInforme;
+crearInforme=function(d,h,conFotos,conStats){return crearInforme2(d,h,conFotos,conStats).then(r=>{const N=[];
+  sinReg().filter(x=>x.desde<=h&&x.hasta>=d).forEach(x=>N.push(x.txt+' ('+fdate(x.desde)+' a '+fdate(x.hasta)+')'));
+  fuera().filter(x=>x.desde<=h).forEach(x=>N.push(x.nombre+': '+x.txt+' desde el '+fdate(x.desde)+'. No se registra su temperatura.'));
+  (M.cfg.camarasHist||[]).filter(x=>x.desde<=h&&x.hasta>=d).forEach(x=>N.push(x.nombre+': '+x.txt+' del '+fdate(x.desde)+' al '+fdate(x.hasta)+'.'));
+  const tarde=Object.values(M.c).filter(x=>x.anotada&&x.fecha>=d&&x.fecha<=h).length;if(tarde)N.push(tarde+(tarde===1?' lectura se apuntó':' lecturas se apuntaron')+' después del día de la lectura, a partir de notas; se indica en cada una.');
+  if(!N.length)return r;return Object.assign({},r,{html:r.html.replace('<h2>4. Registro de temperaturas</h2>','<h2>4. Registro de temperaturas</h2><div class="aviso-inf">'+N.map(n=>'<p>'+esc(n)+'</p>').join('')+'</div>')})})};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="eq-ver"],[data-act="eq-otro"],[data-act="eq-sinreg"]');if(!a)return;const d=a.dataset.act;
+  if(d==='eq-ver')equiposSheet();else if(d==='eq-otro')otroDiaSheet();else sinRegSheet()});
+/* limpiar lo que llega */
+const limpiarCopia5=limpiarCopia;
+limpiarCopia=function(o){o=limpiarCopia5(o);const c=o.cfg;if(!c)return o;const S=(v,n)=>String(v==null?'':v).slice(0,n),F=v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v))?String(v):'';
+  if(c.camarasFuera!=null)c.camarasFuera=(Array.isArray(c.camarasFuera)?c.camarasFuera:[]).slice(0,20).map(x=>({id:S(x&&x.id,40),nombre:S(x&&x.nombre,80),min:+x.min||0,max:+x.max||0,txt:S(x&&x.txt,80),desde:F(x&&x.desde)||'2026-01-01'}));
+  if(c.camarasHist!=null)c.camarasHist=(Array.isArray(c.camarasHist)?c.camarasHist:[]).slice(-40).map(x=>({id:S(x&&x.id,40),nombre:S(x&&x.nombre,80),txt:S(x&&x.txt,80),desde:F(x&&x.desde),hasta:F(x&&x.hasta)}));
+  if(c.sinRegistro!=null)c.sinRegistro=(Array.isArray(c.sinRegistro)?c.sinRegistro:[]).slice(-20).filter(x=>x&&F(x.desde)&&F(x.hasta)).map(x=>({desde:F(x.desde),hasta:F(x.hasta),txt:S(x.txt,300)}));
+  if(c.provIgnorados!=null)c.provIgnorados=(Array.isArray(c.provIgnorados)?c.provIgnorados:[]).slice(-200).map(x=>S(x,80));return o};
+/* ---------- Ventas de meses anteriores: todos los meses en una lista, para ponerlas de golpe ---------- */
+function ventasAnterioresSheet(y){if(esInv()){toast('Solo el administrador');return}
+  conLlave('Ventas de meses anteriores',()=>{const hoyK=today().slice(0,7);y=y||hoyK.slice(0,4);const K=[];for(let m=1;m<=12;m++){const k=y+'-'+pad(m);if(k<hoyK)K.push(k)}
+    const fila=k=>{const v=ventasMes(k)||{},d=cajaDiaria(k),dd=d.reduce((a,x)=>a+(+x.tarjeta||0)+(+x.efectivo||0),0);
+      return '<div class="va-f" data-k="'+k+'"><b>'+esc(MESES[+k.slice(5)-1])+'</b><input class="va-t" inputmode="decimal" placeholder="Datáfono €" value="'+esc(v.tarjeta?String(v.tarjeta).replace('.',','):'')+'" aria-label="Datáfono de '+esc(monthName(k))+'">'+
+        '<input class="va-e" inputmode="decimal" placeholder="Efectivo €" value="'+esc(v.efectivo?String(v.efectivo).replace('.',','):'')+'" aria-label="Efectivo de '+esc(monthName(k))+'">'+(dd?'<small>+ '+eur(dd)+' de caja diaria</small>':'')+'</div>'};
+    sheet('<h2>Ventas de meses anteriores</h2><p class="small muted" style="margin-top:0">Pon lo del <b>datáfono</b> de cada mes (lo ves en el banco o en el resumen del TPV). El efectivo, si lo sabes; si no, déjalo vacío.</p>'+
+      '<div class="c-mes"><button class="btn sm" id="va-a" aria-label="Año anterior">‹</button><b>'+y+'</b><button class="btn sm" id="va-b" aria-label="Año siguiente"'+(y>=hoyK.slice(0,4)?' disabled':'')+'>›</button></div>'+
+      (K.length?'<div class="va-h"><span>Mes</span><span>Datáfono</span><span>Efectivo</span></div>'+K.map(fila).join('')+'<div class="cj-tot" id="va-tot"></div><button class="btn pri big" id="va-s">Guardar</button>':'<div class="empty"><b>Aún no hay meses pasados en '+y+'</b></div>')+
+      '<div class="hint">Desde este mes no hace falta: se suma solo la caja que apuntas cada día.</div>');
+    $('#va-a').onclick=()=>ventasAnterioresSheet(String(+y-1));$('#va-b').onclick=()=>ventasAnterioresSheet(String(+y+1));if(!K.length)return;
+    const tot=()=>{let s=0;$$('.va-f').forEach(r=>{s+=(num($('.va-t',r).value)||0)+(num($('.va-e',r).value)||0)});$('#va-tot').innerHTML=s?'Total del año: <b>'+eur(s)+'</b>':''};tot();$$('.va-f input').forEach(i=>i.oninput=tot);
+    $('#va-s').onclick=()=>{const ps=[];$$('.va-f').forEach(r=>{const k=r.dataset.k,t=num($('.va-t',r).value),e=num($('.va-e',r).value),v=ventasMes(k);
+        if(t==null&&e==null){if(v)ps.push(delRec('x',idMes(k)));return}if((t||0)<0||(e||0)<0)return;
+        if(v&&+v.tarjeta===(t||0)&&+v.efectivo===(e||0))return;ps.push(saveRec('x',{id:idMes(k),fecha:k+'-01',mes:true,tarjeta:t||0,efectivo:e||0,sobras:[],nota:'Total del mes',ts:Date.now()}))});
+      Promise.all(ps).then(()=>{toast(ps.length?'Ventas guardadas':'No había cambios');closeSheet();render()}).catch(()=>{})}})}
+/* accesos bien visibles: Contabilidad (arriba) y almanaque */
+const vConta6=vConta;vConta=function(){const h=vConta6();if(esInv()||!abierto())return h;
+  const b='<button class="btn full va-btn" data-act="ventas-ant">💳 Ventas de meses anteriores (datáfono)</button>',i=h.indexOf('<button class="card o-mes c-cierre"');
+  return i>=0?h.slice(0,i)+b+h.slice(i):h.replace('<div class="c-g">',b+'<div class="c-g">')};
+const almanaque0=almanaque;almanaque=function(y){almanaque0(y);if(esInv())return;const g=$('.al-g');if(g)g.insertAdjacentHTML('beforebegin','<button class="btn full va-btn" data-act="ventas-ant" style="margin-bottom:10px">💳 Poner ventas de meses anteriores</button>')};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ventas-ant"]');if(a){e.stopPropagation();ventasAnterioresSheet()}},true);
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
