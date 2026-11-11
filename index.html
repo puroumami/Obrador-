@@ -3504,7 +3504,7 @@ function ignorarProv(nombre){const k=normProv(nombre);if(!k)return Promise.resol
 const provPendientes=()=>{const G={};Object.values(M.d).forEach(d=>{if(d.provId&&provDe(d.provId))return;const n=String(d.provNombre||'').trim();if(!n||esIgnorado(n))return;const k=normProv(n);(G[k]=G[k]||{n:n,c:0}).c++});return Object.values(G)};
 function siguientePreg(){if(preguntando||!colaPreg.length)return;const dlg=$('#dlg');if(dlg&&dlg.open){setTimeout(siguientePreg,700);return}
   const nombre=colaPreg.shift(),k=normProv(nombre),D=Object.values(M.d).filter(d=>!d.provId&&d.provNombre&&normProv(d.provNombre)===k);
-  if(!D.length){siguientePreg();return}preguntando=true;const cifD=(D.find(d=>d.cifLeido)||{}).cifLeido,cand=provPorCif(cifD)||provPorNombre(nombre),trae=[...new Set(D.flatMap(traeDe))];
+  if(!D.length){siguientePreg();return}preguntando=true;marcarPreg(k);const cifD=(D.find(d=>d.cifLeido)||{}).cifLeido,cand=provPorCif(cifD)||provPorNombre(nombre),trae=[...new Set(D.flatMap(traeDe))];
   sheet('<h2>¿Añado este proveedor?</h2><p class="small muted" style="margin-top:0">Lo he leído en '+(D.length===1?'tu '+esc((D[0].tipo||'factura').toLowerCase())+' del '+fshort(D[0].fecha):D.length+' papeles')+(trae.length?' · te trae '+esc(trae.join(', ')):'')+'.'+(cifD?' '+(/^[A-HJNPQRSUVW]/.test(cifD)?'CIF':'DNI/NIF')+' <b>'+esc(cifD)+'</b>.':'')+'</p>'+
     (cand?'<button class="btn pri big" id="pq-cand">Sí, es «'+esc(cand.nombre)+'»</button><p class="small muted" style="text-align:center;margin:8px 0">o si es otro distinto:</p>':'')+
     '<label for="pq-n" style="margin-top:0">Nombre del proveedor</label><input id="pq-n" value="'+esc(nombre)+'" autocomplete="off"><div class="hint">Corrígelo si la foto no se leyó bien.</div>'+
@@ -3532,10 +3532,10 @@ saveRec=function(kind,o){if(kind!=='d'||!o||esInv()||!M.cfg)return saveRec3(kind
   if(o.provId&&traeDe(o).length){const p=provDe(o.provId);if(p)asegurarProv(p.nombre,traeDe(o)).catch(()=>{})}
   if(o.provId&&(o.cifLeido||o.rsLeido))return saveRec3(kind,o).then(r=>{rellenarProv(o.provId,[o]).catch(()=>{});return r});
   return saveRec3(kind,o)};
-/* los papeles que ya tenías solo con el nombre escrito: los exactos se unen solos y por los demás te pregunta */
+/* los papeles que ya tenías solo con el nombre escrito: los exactos se unen solos; los demás quedan en «Pendientes de decidir» sin preguntar al abrir */
 let yaUnidas=false;
 function unirFacturasViejas(){if(yaUnidas||esInv()||!M.cfg)return;yaUnidas=true;const D=Object.values(M.d).filter(d=>!d.provId&&d.provNombre&&String(d.provNombre).trim());
-  D.reduce((pr,d)=>pr.then(()=>{const p=provs().find(x=>exacto(x.nombre,d.provNombre));if(p)return saveRec3('d',Object.assign({},d,{provId:p.id,provNombre:p.nombre,ts:Date.now()}));preguntarProv(d.provNombre)}),Promise.resolve()).catch(()=>{})}
+  D.reduce((pr,d)=>pr.then(()=>{const p=provs().find(x=>exacto(x.nombre,d.provNombre));if(p)return saveRec3('d',Object.assign({},d,{provId:p.id,provNombre:p.nombre,ts:Date.now()}))}),Promise.resolve()).catch(()=>{})}
 /* ---- la pantalla ---- */
 let provQ='';
 function datosProv(p){const y=today().slice(0,4),F=Object.values(M.d).filter(d=>d.provId===p.id),E=Object.values(M.e).filter(e=>e.provId===p.id);
