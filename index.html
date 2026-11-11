@@ -3413,6 +3413,21 @@ vMenu=function(){const h=vMenu0(),T=tareasHoy();
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ob-compra"]');if(a)compraSheet();
   const g=e.target.closest&&e.target.closest('.m-tar[data-go="tartas"]');if(g)diaReg=today()},true);
 
+/* ===== Bajar la hoja de una sección deslizando hacia abajo para volver al menú (y elegir otra sección) ===== */
+(function(){let y0=0,t0=0,dy=0,arr=false,listo=false,hoja=null;
+  const campo=el=>el&&el.closest&&el.closest('input,select,textarea,[contenteditable],.c-cnt,.r-st,.step,.stepper');
+  const poner=(y,anim)=>{if(!hoja)return;hoja.style.animation='none';hoja.style.transition=anim?'transform .22s ease-out':'none';hoja.style.transform=y?'translateY('+y+'px)':'';
+    const v=$('#view');if(v)v.style.setProperty('--baja',Math.min(1,y/260))};
+  document.addEventListener('touchstart',e=>{listo=false;arr=false;dy=0;if(e.touches.length!==1||tab==='menu'||enInsp()||($('#dlg')&&$('#dlg').open))return;
+    const h=e.target.closest&&e.target.closest('.d-hoja');if(!h||campo(e.target)||(window.scrollY||0)>2)return;
+    hoja=h;listo=true;y0=e.touches[0].clientY;t0=Date.now()},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!listo)return;const d=e.touches[0].clientY-y0;
+    if(!arr){if(d<0||(window.scrollY||0)>2){listo=false;return}e.preventDefault();if(d>8)arr=true;else return}
+    dy=Math.max(0,d);e.preventDefault();poner(dy*0.9,false)},{passive:false});
+  const fin=()=>{if(!arr){listo=false;return}const v=dy/Math.max(1,Date.now()-t0);arr=false;listo=false;
+    if(dy>130||(dy>60&&v>.5)){poner(window.innerHeight,true);setTimeout(()=>{tab='menu';window.scrollTo(0,0);render()},200)}else poner(0,true)};
+  document.addEventListener('touchend',fin);document.addEventListener('touchcancel',fin)})();
+
 /* (la lectura con IA está en a19.js y a20.js) */
 
 </script>
