@@ -359,7 +359,7 @@ html,body{overscroll-behavior-y:none}
 .hoja-nota{margin:6px 0 0;font-size:12px;color:#8C5A12}.hoja-nota p{margin:2px 0}
 .va-h,.va-f{display:grid;grid-template-columns:86px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center}.va-h span{font-size:11px;font-weight:700;color:#7A6A5E;text-transform:uppercase}.va-f{padding:5px 0}.va-f small{grid-column:2/4;font-size:11px;color:#7A6A5E}
 .va-btn{margin-bottom:10px;border:2px solid var(--caramelo)!important;font-weight:700}
-.pd-res{margin:10px 0 4px}.pd-r{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line,#e5e0d5)}.pd-r>span{flex:1;display:flex;flex-direction:column}.pd-r small{color:var(--muted,#777);font-size:13px}.pd-r em{font-style:normal;font-weight:700;white-space:nowrap}.pd-tot{margin-top:8px;padding-top:8px;border-top:2px solid var(--line,#e5e0d5)}.pd-btn{margin:0 0 10px}.pd-l{display:flex;flex-direction:column;gap:6px;margin-top:6px}.pd-i{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line,#ddd);border-radius:12px;margin:0;font-weight:500}.pd-i input{width:22px;height:22px;flex:none;margin:0}.pd-i span{flex:1}.pd-i small{color:var(--muted,#777)}.pd-paso{margin:-4px 0 10px}.ver-av{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;padding:14px;border-radius:14px;border:0;background:#1d6b45;color:#fff;font:inherit;font-size:15px;box-shadow:0 6px 20px rgba(0,0,0,.25)}.ver-pie{text-align:center;margin:18px 0 6px}.lnk{background:none;border:0;padding:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer}.ver-card{margin-top:14px}
+.tiles.tiles-1{grid-template-columns:1fr}.ga-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;color:inherit;margin-bottom:10px;cursor:pointer}.ga-btn span{flex:1;display:flex;flex-direction:column}.ga-btn small{color:var(--muted,#777)}.ga-btn em{font-style:normal;font-weight:700}.ga-nav{display:flex;align-items:center;justify-content:space-between;margin:-4px 0 10px}.ga-nav b{font-size:17px;text-transform:capitalize}.ga-tot{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.ga-tot b{font-size:22px}.ga-sec{margin-top:16px}.ga-h{display:flex;justify-content:space-between;padding-bottom:6px;border-bottom:2px solid var(--line,#e5e0d5)}.ga-vacio{padding:10px 0}.ng-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}.ng-fijo{display:flex;align-items:center;gap:10px;margin-top:14px;font-weight:500}.ng-fijo input{width:22px;height:22px;margin:0}.pd-res{margin:10px 0 4px}.pd-r{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line,#e5e0d5)}.pd-r>span{flex:1;display:flex;flex-direction:column}.pd-r small{color:var(--muted,#777);font-size:13px}.pd-r em{font-style:normal;font-weight:700;white-space:nowrap}.pd-tot{margin-top:8px;padding-top:8px;border-top:2px solid var(--line,#e5e0d5)}.pd-btn{margin:0 0 10px}.pd-l{display:flex;flex-direction:column;gap:6px;margin-top:6px}.pd-i{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line,#ddd);border-radius:12px;margin:0;font-weight:500}.pd-i input{width:22px;height:22px;flex:none;margin:0}.pd-i span{flex:1}.pd-i small{color:var(--muted,#777)}.pd-paso{margin:-4px 0 10px}.ver-av{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;padding:14px;border-radius:14px;border:0;background:#1d6b45;color:#fff;font:inherit;font-size:15px;box-shadow:0 6px 20px rgba(0,0,0,.25)}.ver-pie{text-align:center;margin:18px 0 6px}.lnk{background:none;border:0;padding:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer}.ver-card{margin-top:14px}
 .sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug:empty{display:none}.sug .sg{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--mantequilla);color:var(--cacao);font:600 14px var(--f-body);cursor:pointer}.sug .sg.otro{background:var(--surface);color:var(--muted)}
 .al-si .al-d{display:block;font-weight:600;font-size:11px;color:var(--muted)}
 .al-comun{background:var(--cacao);color:var(--crema);border-radius:16px;padding:12px 14px;margin:4px 0 12px}.al-comun b{font:700 17px/1.2 var(--f-display)}
@@ -3814,7 +3814,7 @@ mesCompras=function(k){mesCompras1(k);const D=Object.values(M.d).filter(d=>esFac
 /* ---------- 6) Buscador único arriba del menú: facturas, proveedores y lotes ---------- */
 let gsQ='';
 function facturasPorMes(D,conEnviar){const G={};D.sort((a,b)=>a.fecha<b.fecha?1:-1).forEach(d=>{(G[d.fecha.slice(0,7)]=G[d.fecha.slice(0,7)]||[]).push(d)});
-  return Object.keys(G).sort().reverse().map(k=>'<div class="gs-mes"><b>'+esc(monthName(k))+'</b>'+(conEnviar?'<button class="btn sm" data-gsenv="'+k+'">Enviar</button>':'')+'</div>'+G[k].map(d=>'<button class="gs-it" data-gsdoc="'+esc(d.id)+'"><span><b>'+esc(provNom(d)||d.tipo)+'</b><small>'+esc(d.tipo)+(d.num?' nº '+esc(d.num):'')+' · '+fshort(d.fecha)+'</small></span>'+(d.total>0&&!esInv()?'<em>'+eur(d.total)+'</em>':'')+'</button>').join('')).join('')}
+  return Object.keys(G).sort().reverse().map(k=>'<div class="gs-mes"><b>'+esc(monthName(k))+'</b>'+(conEnviar?'<button class="btn sm" data-gsenv="'+k+'">Enviar</button>':'')+'</div>'+G[k].map(d=>'<button class="gs-it" data-gsdoc="'+esc(d.id)+'"><span><b>'+esc(provNom(d)||(d.gasto&&d.nombre)||d.tipo)+'</b><small>'+esc(d.gasto?'Gasto':d.tipo)+(d.num?' nº '+esc(d.num):'')+' · '+fshort(d.fecha)+'</small></span>'+(d.total>0&&!esInv()?'<em>'+eur(d.total)+'</em>':'')+'</button>').join('')).join('')}
 function buscarTodo(q){const n=norm(q).trim();if(n.length<2)return '';const F=Object.values(M.d).filter(esFactura),P=provs();
   if(/^(factura|facturas|albaran|albaranes|papeles)$/.test(n))return '<div class="gs-tit">Facturas y albaranes ('+F.length+')</div>'+(F.length?facturasPorMes(F.slice(),false):'<div class="small muted">Aún no tienes.</div>');
   if(/^(proveedor|proveedores)$/.test(n))return '<div class="gs-tit">Proveedores ('+P.length+')</div>'+P.map(p=>'<button class="gs-it" data-gsprov="'+esc(p.id)+'"><span><b>'+esc(p.nombre)+'</b><small>'+esc(p.suministra||'')+'</small></span><em>'+F.filter(d=>d.provId===p.id).length+' ›</em></button>').join('');
@@ -4080,7 +4080,7 @@ const almanaque0=almanaque;almanaque=function(y){almanaque0(y);if(esInv())return
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ventas-ant"]');if(a){e.stopPropagation();ventasAnterioresSheet()}},true);
 
 /* ===== Versión y botón «Actualizar» ===== */
-/*VER:2026.11.11-5*/
+/*VER:2026.11.12-2*/
 const VER_APP=(()=>{try{const m=document.documentElement.innerHTML.match(new RegExp('/\\*V'+'ER:([^*]+)\\*/'));return m?m[1]:'?'}catch(e){return '?'}})();
 const enWebPub=()=>'serviceWorker' in navigator&&(/github\.io$/.test(location.hostname)||location.hostname==='localhost');
 let verNueva=null,verMirada=0;
@@ -4177,6 +4177,114 @@ function pasoPedido(L,i,pv,F){PD_CTX=null;if(i>=L.length){toast('Pedido apuntado
 const vEntradas4=vEntradas;
 vEntradas=function(){const h=vEntradas4();if(esInv())return h;return h.replace('<button class="btn full e-add"','<button class="btn pri big pd-btn" data-act="pedido">📦 Me ha llegado un pedido</button><button class="btn full e-add"')};
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="pedido"]');if(a)pedidoSheet()});
+
+/* ===== Gastos: todo lo que gastas en el mes en un solo sitio, y añadir uno ===== */
+const GASTO_SUG=['Gasolina','Reparación','Material de limpieza','Menaje y utensilios','Publicidad','Parking','Otro'];
+const esGastoSuelto=d=>esFactura(d)&&d.gasto===true;
+function gastosMes(k){const a=k+'-01',b=finMes(k),F=fijosEn(a,b),D=Object.values(M.d).filter(d=>sumable(d)&&d.total>0&&d.fecha.slice(0,7)===k);
+  const P={},S=[];D.forEach(d=>{if(esGastoSuelto(d)){S.push(d);return}const id=d.provId||('n:'+norm(provNom(d)||d.tipo));const x=P[id]=P[id]||{id:d.provId||'',n:provNom(d)||'Sin proveedor',eur:0,docs:[]};x.eur+=d.total;x.docs.push(d)});
+  const Pl=Object.values(P).sort((x,y)=>y.eur-x.eur),tp=Pl.reduce((s,x)=>s+x.eur,0),ts=S.reduce((s,d)=>s+d.total,0);
+  return {F:F,P:Pl,S:S.sort((x,y)=>x.fecha<y.fecha?1:-1),tf:F.tot,tp:tp,ts:ts,tot:F.tot+tp+ts}}
+function gastosSheet(k){if(esInv()){toast('Solo el administrador');return}conLlave('Gastos',()=>pintaGastos(k||today().slice(0,7)))}
+function pintaGastos(k){const G=gastosMes(k),hoyK=today().slice(0,7),fila=(n,s,e,attr)=>'<button class="gs-it"'+(attr||'')+'><span><b>'+esc(n)+'</b>'+(s?'<small>'+s+'</small>':'')+'</span><em>'+eur(e)+'</em></button>';
+  const sec=(t,tot,body)=>'<div class="ga-sec"><div class="ga-h"><b>'+t+'</b><span>'+eur(tot)+'</span></div>'+body+'</div>';
+  const FR={mes:'cada mes',trim:'cada 3 meses',anual:'una vez al año'};const fx=fijos();
+  sheet('<h2>Gastos</h2><div class="ga-nav"><button class="btn sm" id="ga-ant" aria-label="Mes anterior">‹</button><b>'+esc(monthName(k))+'</b><button class="btn sm" id="ga-sig" aria-label="Mes siguiente"'+(k>=hoyK?' disabled':'')+'>›</button></div>'+
+    '<div class="card ga-tot"><span>Total gastado</span><b>'+eur(G.tot)+'</b></div>'+
+    '<button class="btn pri big" id="ga-add">+ Añadir un gasto</button>'+
+    sec('📌 Fijos',G.tf,(G.F.L.length?G.F.L.map(x=>{const g=fx.find(y=>y.nombre===x.n)||{};return fila(x.n,'día '+(+x.f.slice(8,10))+' · '+(FR[g.frec]||''),x.eur,' data-ga="fijos"')}).join(''):'<div class="small muted ga-vacio">Ninguno este mes.</div>')+'<button class="btn sm full" data-ga="fijos" style="margin-top:6px">Ver y cambiar los gastos fijos</button>')+
+    sec('🧾 Compras a proveedores',G.tp,G.P.length?G.P.map(x=>fila(x.n,x.docs.length+(x.docs.length===1?' factura':' facturas'),x.eur,x.id?' data-gsprov="'+esc(x.id)+'"':' data-gsdoc="'+esc(x.docs[0].id)+'"')).join(''):'<div class="small muted ga-vacio">Ninguna factura este mes.</div>')+
+    sec('🛒 Otros gastos',G.ts,G.S.length?G.S.map(d=>fila(d.nombre||'Gasto',fshort(d.fecha),d.total,' data-gsdoc="'+esc(d.id)+'"')).join(''):'<div class="small muted ga-vacio">Nada apuntado. Gasolina, una reparación… pulsa «+ Añadir un gasto».</div>'));
+  $('#ga-ant').onclick=()=>pintaGastos(mesMas(k,-1));$('#ga-sig').onclick=()=>{if(k<hoyK)pintaGastos(mesMas(k,1))};
+  $('#ga-add').onclick=()=>nuevoGasto(k);
+  $$('#sheet [data-ga="fijos"]').forEach(b=>b.onclick=()=>fijosSheet())}
+function nuevoGasto(k){const hoyK=today().slice(0,7),f0=k===hoyK?today():finMes(k);let foto=null,arch='img';
+  sheet('<h2>Añadir un gasto</h2><label for="ng-c">¿Qué es?</label><input id="ng-c" list="ng-l" placeholder="Gasolina, reparación…" autocomplete="off"><datalist id="ng-l">'+GASTO_SUG.map(s=>'<option value="'+esc(s)+'">').join('')+'</datalist>'+
+    '<div class="ng-chips">'+GASTO_SUG.slice(0,6).map(s=>'<button type="button" class="chip" data-ngc="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>'+
+    '<label for="ng-e">Importe (con IVA)</label><input id="ng-e" inputmode="decimal" placeholder="0,00 €">'+
+    '<label for="ng-f">Fecha</label><input id="ng-f" type="date" value="'+f0+'" max="'+today()+'">'+
+    '<label class="ng-fijo"><input type="checkbox" id="ng-x"> Lo pago siempre (es un gasto fijo)</label><div id="ng-xw" hidden><select id="ng-fr"><option value="mes">Cada mes</option><option value="trim">Cada 3 meses</option><option value="anual">Una vez al año</option></select></div>'+
+    '<button type="button" class="btn full" id="ng-foto">📷 Foto del ticket (si quieres)</button><img id="ng-img" class="bigphoto" hidden alt="Ticket">'+
+    '<button class="btn pri big" id="ng-s">Guardar</button><button class="btn full" id="ng-v">Volver</button>');
+  $$('[data-ngc]').forEach(b=>b.onclick=()=>{$('#ng-c').value=b.dataset.ngc;$('#ng-e').focus()});
+  $('#ng-x').onchange=()=>{$('#ng-xw').hidden=!$('#ng-x').checked;$('#ng-foto').hidden=$('#ng-x').checked};
+  $('#ng-foto').onclick=()=>elegirArchivo((d,t)=>{foto=d;arch=t;const im=$('#ng-img');if(t==='img'){im.src=d;im.hidden=false}else im.hidden=true;$('#ng-foto').textContent='Cambiar la foto'});
+  $('#ng-v').onclick=()=>pintaGastos(k);
+  $('#ng-s').onclick=()=>{const c=$('#ng-c').value.trim().slice(0,60),e=num($('#ng-e').value),f=$('#ng-f').value;
+    if(!c){toast('Pon qué es el gasto');$('#ng-c').focus();return}if(!(e>0)){toast('Pon el importe');$('#ng-e').focus();return}
+    if($('#ng-x').checked){const L=fijos().slice(),ex=L.findIndex(g=>norm(g.nombre)===norm(c)),g={id:ex>=0?L[ex].id:'fx'+uid(),nombre:c,importe:Math.round(e*100)/100,frec:$('#ng-fr').value,mes:+f.slice(5,7),dia:+f.slice(8,10)||1,desde:f.slice(0,7)};
+      if(ex>=0)L[ex]=g;else L.push(g);saveCfg(Object.assign({},M.cfg,{fijos:L})).then(()=>{toast('Gasto fijo guardado');render();pintaGastos(k)}).catch(()=>{});return}
+    if(!isoOk(f)||f>today()){toast('Revisa la fecha');return}
+    const d={id:uid(),tipo:'Factura',gasto:true,nombre:c,provId:'',provNombre:'',fecha:f,vence:'',total:Math.round(e*100)/100,archivo:arch,ts:Date.now()};
+    (foto?(d.hash=huella(foto),saveFoto('doc_'+d.id,foto)):Promise.resolve()).then(()=>saveRec('d',d)).then(()=>{toast('Gasto apuntado');render();pintaGastos(f.slice(0,7))}).catch(()=>{})}}
+if(typeof sanear==='function'){const sanear8=sanear;sanear=function(k,d){d=sanear8(k,d);if(d&&k==='d'&&'gasto' in d)d.gasto=d.gasto===true;return d}}
+/* en Contabilidad, arriba: botón grande */
+const vConta8=vConta;
+vConta=function(){let h=vConta8();if(esInv()||!abierto())return h;const k=contaMes||today().slice(0,7),G=gastosMes(k);
+  const b='<button class="card ga-btn" data-act="gastos" data-k="'+k+'"><span><b>💶 Gastos</b><small>Fijos, facturas y otros · añadir uno</small></span><em>'+eur(G.tot)+' ›</em></button>';
+  const i=h.indexOf('<button class="btn full va-btn"');return i>=0?h.slice(0,i)+b+h.slice(i):b+h};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="gastos"]');if(a)gastosSheet(a.dataset.k)});
+/* lupa: «gastos», «fijos», «luz»… */
+const buscarTodo8=buscarTodo;
+buscarTodo=function(q){const n=norm(q).trim();if(n.length<2||esInv())return buscarTodo8(q);
+  const k=today().slice(0,7),acceso='<div class="gs-tit">Gastos</div><button class="gs-it" data-act="gastos" data-k="'+k+'"><span><b>💶 Gastos de '+esc(monthName(k).toLowerCase())+'</b><small>Fijos, facturas y otros · añadir uno</small></span><em>›</em></button>';
+  if(/^(gasto|gastos|gastos fijos|fijos|fijo|gasto fijo)$/.test(n))return acceso+fijos().filter(g=>g.importe>0).map(g=>'<button class="gs-it" data-act="co-fijos"><span><b>'+esc(g.nombre)+'</b><small>Gasto fijo</small></span><em>'+eur(g.importe)+'</em></button>').join('');
+  const r=buscarTodo8(q),F=fijos().filter(g=>norm(g.nombre).includes(n));
+  if(!F.length)return r;const h='<div class="gs-tit">Gastos fijos</div>'+F.map(g=>'<button class="gs-it" data-act="co-fijos"><span><b>'+esc(g.nombre)+'</b><small>'+(g.importe>0?'Gasto fijo':'Sin importe puesto')+'</small></span><em>'+(g.importe>0?eur(g.importe):'›')+'</em></button>').join('');
+  return /gs-nada/.test(r)?h:h+r};
+
+/* ===== Cada cosa en su sitio: facturas y estadísticas solo en Contabilidad; Sanidad solo con lo de Sanidad ===== */
+const esPapelSan=d=>d&&!esFactura(d);
+/* quitar un bloque <div ...> completo empezando en i (cuenta los div de dentro) */
+function cortarDiv(h,i){if(i<0)return null;let n=0,j=i;const re=/<div\b|<\/div>/g;re.lastIndex=i;let m;while((m=re.exec(h))){n+=m[0]==='</div>'?-1:1;if(n===0){j=m.index+6;return [i,j]}}return null}
+/* --- Sanidad: el inicio --- */
+const vSanidad9=vSanidad;
+vSanidad=function(){let h=vSanidad9();const inv=esInv(),n=Object.values(M.d).filter(esPapelSan).length;
+  h=h.replace(/<button class="ini-t s-t[^"]*"[^>]*data-act="kilos"[^>]*>[\s\S]*?<\/button>/,'').replace(/<button class="ini-t s-t[^"]*"[^>]*data-act="stats"[^>]*>[\s\S]*?<\/button>/,'');
+  h=h.replace(/(<button class="ini-t s-t[^"]*"[^>]*data-go="docs"[^>]*>[\s\S]*?<span class="ini-n">)Facturas(<\/span><span class="ini-s">)[^<]*(<\/span>)/,'$1Papeles$2'+(n?n+(n===1?' papel':' papeles'):'Carnet, plagas, agua…')+'$3');
+  return h};
+/* --- Sanidad: Buscar lote / meses, sin estadísticas ni kilos --- */
+const vMeses9=vMeses;
+vMeses=function(){let h=vMeses9();
+  h=h.replace('<button class="btn" data-act="stats">Mis estadísticas</button>','').replace('<button class="btn full" data-act="kilos" style="margin-bottom:10px">Material (kilos comprados)</button>','');
+  return h.replace('<div class="two" style="margin-bottom:6px"><button class="btn pri" data-act="informe">Informe para Sanidad</button></div>','<button class="btn pri full" data-act="informe" style="margin-bottom:10px">Informe para Sanidad</button>')};
+/* --- Sanidad: Papeles, sin facturas --- */
+const vDocs9=vDocs;
+vDocs=function(){let h=vDocs9();
+  h=h.replace('<button class="btn full al-btn" data-act="almanaque">📅 Almanaque: meter facturas de otros meses</button>','');
+  h=h.replace(/<button class="tile" data-act="doc-nuevo" data-tipo="Factura">[\s\S]*?<\/button>/,'');
+  if(typeof bloqueCuentasDocs==='function'){const b=bloqueCuentasDocs();if(b)h=h.replace(b,'')}
+  h=h.replace('<div class="tiles">','<div class="tiles tiles-1">').replace('Buscar: proveedor, tipo, descripción…','Buscar: carnet, plagas, agua…');
+  if(!Object.values(M.d).some(esPapelSan))h=h.replace(/<div class="empty" style="margin-top:14px"><b>Guarda aquí tus papeles<\/b>[^<]*<\/div>/,'').replace('<div id="dlist">','<div class="empty" style="margin-top:14px"><b>Guarda aquí los papeles de Sanidad</b>El carnet de manipulador, el certificado de plagas, el análisis del agua… Si pones cuándo caducan, la app te avisa. Las facturas están en Contabilidad.</div><div id="dlist">');
+  return h};
+listaDocs=function(){const q=norm(docQ),ds=docsOrden().filter(esPapelSan).filter(d=>!q||norm([d.tipo,d.nombre,provNom(d),fdate(d.fecha)].join(' ')).includes(q));
+  if(Object.values(M.d).some(esPapelSan)&&!ds.length)return '<div class="small muted" style="margin-top:12px">No hay nada que coincida con la búsqueda.</div>';
+  return [...new Set(ds.map(d=>d.fecha.slice(0,7)))].map(k=>'<h3>'+monthName(k)+'</h3>'+ds.filter(d=>d.fecha.slice(0,7)===k).map(cardDoc).join('')).join('')};
+/* --- Contabilidad: abajo, solo cuatro botones --- */
+const vConta9=vConta;
+vConta=function(){let h=vConta9();if(esInv()||!abierto())return h;const i=h.lastIndexOf('<div class="c-g">'),r=cortarDiv(h,i);if(!r)return h;
+  const k=contaMes||today().slice(0,7),nf=Object.values(M.d).filter(d=>esFactura(d)&&d.fecha.slice(0,7)===k).length;
+  const c=(act,t,s)=>'<button class="card o-mes" data-act="'+act+'"><span class="small muted">'+s+'</span><b>'+t+'</b></button>';
+  const g='<div class="c-g">'+c('facturas','🧾 Facturas',nf?nf+(nf===1?' este mes':' este mes'):'Todas, por meses')+c('estadisticas','📊 Estadísticas','Tartas, kilos, semanas y año')+
+    c('co-costes','Costes y márgenes','Tarta entera y porción')+(typeof informeCuentasSheet==='function'?c('inf-cuentas','📄 Informe de cuentas','PDF para guardar o enviar'):'')+'</div>';
+  return h.slice(0,r[0])+g+h.slice(r[1])};
+/* --- Facturas: todas en un sitio --- */
+let facQ='';
+function facturasSheet(){if(esInv())return;conLlave('Facturas',()=>{const D=()=>Object.values(M.d).filter(esFactura);
+  const lista=()=>{const q=norm(facQ).trim(),L=D().filter(d=>!q||norm([provNom(d),d.nombre,d.num,d.tipo,String(d.total||'').replace('.',','),(d.lineas||[]).map(l=>l&&(l.ing+' '+(l.lote||''))).join(' ')].join(' ')).includes(q));
+    return L.length?facturasPorMes(L,true):'<div class="small muted" style="margin-top:12px">'+(D().length?'No hay ninguna con eso.':'Aún no tienes facturas.')+'</div>'};
+  sheet('<h2>Facturas</h2><div class="two"><button class="btn pri" data-act="doc-nuevo" data-tipo="Factura">📷 Añadir factura</button><button class="btn" data-act="almanaque">📅 Meses anteriores</button></div>'+
+    (typeof cuentasSheet==='function'?'<button class="btn full" data-act="co-cuentas" style="margin-top:8px">Cuentas del mes</button>':'')+
+    '<input id="fq" type="search" placeholder="Buscar: proveedor, nº, lote, importe…" value="'+esc(facQ)+'" style="margin-top:12px" autocomplete="off"><div id="fq-l">'+lista()+'</div>');
+  $('#fq').oninput=()=>{facQ=$('#fq').value;$('#fq-l').innerHTML=lista();montarEnv()};
+  const montarEnv=()=>$$('#fq-l [data-gsenv]').forEach(b=>b.onclick=()=>enviarDocs(D().filter(d=>d.fecha.slice(0,7)===b.dataset.gsenv)));montarEnv()})}
+/* --- Estadísticas: todo junto --- */
+function estadisticasSheet(){if(esInv())return;conLlave('Estadísticas',()=>{const b=(act,t,s)=>'<button class="card o-mes es-it" data-act="'+act+'"><span class="small muted">'+s+'</span><b>'+t+'</b></button>';
+  sheet('<h2>Estadísticas</h2><div class="c-g">'+b('stats','🍰 Tartas','Por meses y por sabor')+b('kilos','⚖️ Material','Kilos que has comprado')+b('co-semana','📅 La semana','De lunes a domingo')+b('co-estudio','📈 El mes','Comparado con el anterior')+b('co-anio','🗓️ El año','Mes a mes y por producto')+'</div>')})}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="facturas"],[data-act="estadisticas"]');if(!a)return;if(a.dataset.act==='facturas')facturasSheet();else estadisticasSheet()});
+/* lupa: «estadísticas» */
+const buscarTodo9=buscarTodo;
+buscarTodo=function(q){const n=norm(q).trim();if(!esInv()&&/^(estadistica|estadisticas|stats|graficas|numeros)$/.test(n))return '<div class="gs-tit">Estadísticas</div><button class="gs-it" data-act="estadisticas"><span><b>📊 Estadísticas</b><small>Tartas, kilos, semanas y año</small></span><em>›</em></button>';return buscarTodo9(q)};
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
