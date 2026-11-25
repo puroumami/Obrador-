@@ -4096,7 +4096,7 @@ const almanaque0=almanaque;almanaque=function(y){almanaque0(y);if(esInv())return
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ventas-ant"]');if(a){e.stopPropagation();ventasAnterioresSheet()}},true);
 
 /* ===== Versión y botón «Actualizar» ===== */
-/*VER:2026.11.25-5*/
+/*VER:2026.11.25-6*/
 const VER_APP=(()=>{try{const m=document.documentElement.innerHTML.match(new RegExp('/\\*V'+'ER:([^*]+)\\*/'));return m?m[1]:'?'}catch(e){return '?'}})();
 const enWebPub=()=>'serviceWorker' in navigator&&(/github\.io$/.test(location.hostname)||location.hostname==='localhost');
 let verNueva=null,verMirada=0;
@@ -5916,6 +5916,37 @@ const escandalloSheet74=escandalloSheet;
 escandalloSheet=function(){escandalloSheet74();let n=0;const iv=setInterval(()=>{if(++n>2400){clearInterval(iv);return}const c=$('#sheet .es-medio');const h=$('#sheet h2');if(!h||h.textContent.trim()!=='🧮 Escandallo')return;if(!c&&!$('#es-sumi'))return;clearInterval(iv);if($('#mt-info'))return;
   const m=mediaTartas(),txt=!m.dias?'Aún no hay tartas apuntadas: los gastos fijos no se pueden repartir.':'Los gastos se reparten entre <b>'+Math.round(m.mes)+' tartas al mes</b> (tu media de '+(m.dias>=89?'los últimos 3 meses':'los últimos '+m.dias+' días')+'), no por días sueltos.'+(m.dias<21?' Aún hay pocos días apuntados: el reparto es aproximado.':'');
   (c||$('#es-sumi')).insertAdjacentHTML(c?'beforeend':'beforebegin','<div class="small muted" id="mt-info" style="margin-top:8px">'+txt+'</div>')},50)};
+
+/* ===== Unidades (huevos…): «compraste 180 ud por 38 €» y «usas 5 ud» siempre cuadra ===== */
+/* 1) en el editor: si lo que usas va en unidades y lo comprado en kilos (o al revés), se ajusta solo; y si falta la cantidad comprada, lo pide claro */
+document.addEventListener('change',e=>{const s=e.target;if(!s||!s.classList||!s.classList.contains('ec-u'))return;const rw=s.closest('.ec-r');if(!rw)return;const cu=$('.ec-cu',rw);if(!cu)return;
+  const uso=s.value==='ud'?'ud':'peso',com=cu.value==='ud'?'ud':'peso';if(uso!==com&&!(rw.dataset.orig||'').startsWith('factura')&&!$('.ec-cq',rw).value){cu.value=s.value==='ud'?'ud':(s.value==='ml'||s.value==='L')?'L':'kg';cu.dispatchEvent(new Event('change'))}},true);
+document.addEventListener('input',e=>{const t=e.target;if(!t||!t.classList||!t.classList.contains('ec-ce'))return;const rw=t.closest('.ec-r');if(!rw)return;setTimeout(()=>{const pp=$('.ec-pp',rw),q=$('.ec-cq',rw);
+  if(pp&&q&&!q.value&&num(t.value)>0){const u=$('.ec-cu',rw).value;pp.innerHTML='<b>¿Cuánt'+(u==='ud'?'as unidades':'o')+' compraste por '+esc(t.value)+' €?</b> Escríbelo en «Compraste» (p. ej. 180 '+(u==='ud'?'huevos':u)+').'}},0)});
+/* al abrir una fila nueva de unidades, lo comprado también en unidades */
+const editarCantidades75=editarCantidades;
+editarCantidades=function(sid){editarCantidades75(sid);setTimeout(()=>$$('#ec-ls .ec-r').forEach(rw=>{const u=$('.ec-u',rw),cu=$('.ec-cu',rw);if(u&&cu&&u.value==='ud'&&cu.value!=='ud'&&!$('.ec-cq',rw).value){cu.value='ud'}}),80)};
+/* 2) en el asistente: el precio se pregunta como «cuánto compraste y cuánto pagaste» (no €/kg ni €/ud) */
+const escandalloAuto75=escandalloAuto;
+escandalloAuto=function(i){i=i||0;if(esInv())return;const F=faltaEscandallo(),x=F[i];if(!x||x.k!=='precio')return escandalloAuto75(i);
+  conLlave('Escandallo',()=>{const ud=x.u==='ud',liq=!ud&&typeof esLiquido==='function'&&esLiquido(x.ing),uni=ud?'ud':liq?'L':'kg';
+    sheet('<div class="small muted">'+(i+1)+' de '+F.length+' · el escandallo necesita esto</div><h2>Precio de '+esc(x.ing)+'</h2>'+
+      '<p class="small muted">Lo más fácil: fotografía la factura donde viene y lo cojo solo. Si no, dime tu última compra:</p>'+
+      '<div class="two"><div><label for="ep-q">'+(ud?'¿Cuántas unidades compraste?':liq?'¿Cuántos litros compraste?':'¿Cuántos kilos compraste?')+'</label><input id="ep-q" inputmode="decimal" placeholder="'+(ud?'180':'10')+'"></div>'+
+      '<div><label for="ep-e">¿Cuánto pagaste? (€ con IVA)</label><input id="ep-e" inputmode="decimal" placeholder="0,00"></div></div>'+
+      '<div class="small" id="ep-r"></div><button class="btn pri big" id="ep-ok">Guardar y siguiente</button><button class="btn full" id="ea-salta">Saltar por ahora</button><button class="btn full" id="ea-fin">Terminar</button>');
+    const q=$('#ep-q'),e=$('#ep-e'),r=$('#ep-r');q.focus();
+    const pinta=()=>{const a=num(q.value),b=num(e.value);r.textContent=a>0&&b>0?'= '+eur3(b/a).replace(/\s*€$/,'')+' €/'+uni:''};q.oninput=pinta;e.oninput=pinta;e.onkeydown=ev=>{if(ev.key==='Enter')$('#ep-ok').click()};
+    $('#ep-ok').onclick=()=>{const a=num(q.value),b=num(e.value);if(!(a>0)){toast(ud?'Escribe cuántas unidades compraste':'Escribe cuánto compraste');q.focus();return}if(!(b>0)){toast('Escribe lo que pagaste');e.focus();return}
+      const m=Object.assign({},M.cfg.preciosIng||{});m[x.ing]={p:ud?b/a:b/(a*1000),u:ud?'ud':'g',f:today(),compra:{q:a,u:uni,eur:b}};saveCfg(Object.assign({},M.cfg,{preciosIng:m})).then(()=>escandalloAuto(i))};
+    $('#ea-salta').onclick=()=>escandalloAuto(i+1);$('#ea-fin').onclick=escandalloSheet})};
+/* 3) «Poner precio» de la tarta: igual, con compra y pago */
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-esp]');if(!b)return;ev.preventDefault();ev.stopImmediatePropagation();
+  const ing=b.dataset.esp,sh=$('#sheet h2'),sid=((M.cfg.sabores||[]).find(s=>sh&&sh.textContent.includes(s.nombre))||{}).id;if(sid)editarCantidades(sid)},true);
+/* si escribes «Huevos» (o algo que va por unidades), se pone solo en unidades */
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.classList||!t.classList.contains('ec-i'))return;const rw=t.closest('.ec-r');if(!rw)return;
+  const porUd=(typeof udFija==='function'&&udFija(t.value))||/huevo/i.test(t.value);if(!porUd)return;const u=$('.ec-u',rw),cu=$('.ec-cu',rw);
+  if(u&&u.value!=='ud'){u.value='ud';delete rw.dataset.ing}if(cu&&cu.value!=='ud'&&!$('.ec-cq',rw).value)cu.value='ud'},true);
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
