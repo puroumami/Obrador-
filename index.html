@@ -4096,7 +4096,7 @@ const almanaque0=almanaque;almanaque=function(y){almanaque0(y);if(esInv())return
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-act="ventas-ant"]');if(a){e.stopPropagation();ventasAnterioresSheet()}},true);
 
 /* ===== Versión y botón «Actualizar» ===== */
-/*VER:2026.11.25-7*/
+/*VER:2026.11.25-8*/
 const VER_APP=(()=>{try{const m=document.documentElement.innerHTML.match(new RegExp('/\\*V'+'ER:([^*]+)\\*/'));return m?m[1]:'?'}catch(e){return '?'}})();
 const enWebPub=()=>'serviceWorker' in navigator&&(/github\.io$/.test(location.hostname)||location.hostname==='localhost');
 let verNueva=null,verMirada=0;
@@ -5885,7 +5885,7 @@ escandalloAuto=function(i){i=i||0;if(esInv())return;const F=faltaEscandallo(),x=
 /* ---- ¿tengo que subir el precio? ---- */
 function precioParaGanar(o,k){if(!o||!(o.costeE>0))return null;const sin=o.costeE/(1-k/100);return {sin:sin,con:sin*(1+IVA_VENTA)}}
 const escandalloTarta73=escandalloTarta;
-escandalloTarta=function(sid){escandalloTarta73(sid);const o=escandallo(sid),sh=$('#sheet');if(!o||!o.hay||!sh||$('#ep-sube'))return;
+escandalloTarta=function(sid){escandalloTarta73(sid);const o=escandallo(sid),sh=$('#sheet');if(!o||!o.hay||!sh||$('#ep-sube')||!(o.costeE>0))return;
   const k=typeof margenRest==='function'?margenRest():50,eq=o.costeE*(1+IVA_VENTA),r=precioParaGanar(o,k),actual=o.pvEi;
   const msg=actual==null?'Aún no tiene precio de venta en la carta.':actual<eq?'⚠️ Con '+eur3(actual)+' pierdes dinero. Para no perder, como mínimo <b>'+eur3(eq)+'</b>.':o.pcE!=null&&o.pcE<k?'Ganas, pero menos del '+k+' % que te has puesto de objetivo.':'✅ Con '+eur3(actual)+' ganas el '+Math.round(o.pcE)+' %. No hace falta subirla.';
   const por=sh.querySelector('.es-por');if(por)por.insertAdjacentHTML('beforebegin','<div class="card ep-card" id="ep-sube"><b>¿Tengo que subirla?</b><div class="small">'+msg+'</div>'+
@@ -5973,6 +5973,33 @@ fijosSheet=function(){fijosSheet76();let n=0;const iv=setInterval(()=>{if(++n>20
 const cantLinea76=cantLinea;
 cantLinea=function(l){const c=cantLinea76(l);if(!l)return c;const n=String(l.ing||l.producto||''),u=norm(String(l.ud||l.unidad||'')),q=+(l.cant!=null?l.cant:l.cantidad)||0;
   if(udFija(n)&&q>0){const doc=/docena/.test(u)||/docena/i.test(n);if(!c||c.u!=='ud'||doc)return {q:doc?q*12:(c&&c.u==='ud'?c.q:q),u:'ud'}}return c};
+
+/* ===== Huevos siempre en unidades · «No lo pago» quita el gasto de verdad ===== */
+/* 1) recetas que tenían los huevos en gramos con un número pequeño (5, 6…) eran unidades: se pasan a «ud» */
+let normHecho=false;
+function normHuevos(){const R=PRIV.datos&&PRIV.datos.rec;if(!R)return;let cambio=false;
+  Object.values(R).forEach(r=>(r&&r.ings||[]).forEach(x=>{if(udFija(x.ing)&&x.ud!=='ud'&&+x.q>0&&+x.q<=30){x.ud='ud';cambio=true}}));
+  if(cambio&&typeof guardarDatos==='function')guardarDatos().catch(()=>{})}
+const huevosEnGramos=sid=>{const r=recetaDe(sid);return !!(r&&(r.ings||[]).some(x=>udFija(x.ing)&&x.ud!=='ud'))};
+const faltaEscandallo77=faltaEscandallo;
+faltaEscandallo=function(){normHuevos();const F=faltaEscandallo77();
+  /* el precio de los huevos siempre por unidades */
+  F.forEach(x=>{if(x.k==='precio'&&udFija(x.ing))x.u='ud'});
+  (M.cfg.sabores||[]).forEach(s=>{if(huevosEnGramos(s.id))F.unshift({k:'receta',sid:s.id,t:'Huevos en gramos en '+s.nombre+': ponlos en unidades'})});
+  return F};
+const escandalloTarta77=escandalloTarta;
+escandalloTarta=function(sid){normHuevos();escandalloTarta77(sid);if(huevosEnGramos(sid)){const h=$('#sheet h2');if(h&&!$('#hv-av'))h.insertAdjacentHTML('afterend','<div class="hint gn-aviso" id="hv-av">Los huevos de esta receta están en gramos. Pulsa «✏️ Cambiar cantidades» y ponlos en <b>ud</b> (por ejemplo, 5 ud).</div>')}};
+/* en el editor, una fila de huevos se abre en unidades */
+const editarCantidades77=editarCantidades;
+editarCantidades=function(sid){normHuevos();return editarCantidades77(sid)};
+/* 2) gastos fijos en el asistente: «No lo pago» lo quita de la lista (como la 🗑️) y los botones se entienden mejor */
+const escandalloAuto77=escandalloAuto;
+escandalloAuto=function(i){const F0=faltaEscandallo(),x0=F0[i||0];if(x0&&x0.k==='receta'&&/Huevos en gramos/.test(x0.t)){editarCantidades(x0.sid);return}const r=escandalloAuto77(i);let n=0;const iv=setInterval(()=>{if(++n>200){clearInterval(iv);return}const no=$('#ef-no');if(!no&&!$('#ea-fin'))return;clearInterval(iv);
+    if(no&&!no.dataset.q){no.dataset.q='1';no.textContent='🗑️ No lo pago: quitar este gasto';no.classList.add('danger');
+      const t=($('#sheet h2')||{}).textContent||'',F=faltaEscandallo(),x=F[i||0];
+      no.onclick=()=>{if(!x||x.k!=='fijo')return;const g=fijos().find(y=>y.id===x.id);const lista=JSON.parse(JSON.stringify(fijos())).filter(y=>y.id!==x.id);
+        saveCfg(Object.assign({},M.cfg,{fijos:lista})).then(()=>{toast((g&&g.nombre||'Gasto')+' quitado');escandalloAuto(i||0)})}}
+    const fin=$('#ea-fin');if(fin&&!fin.dataset.q){fin.dataset.q='1';fin.textContent='Salir (lo demás te lo pregunto otro día)'}},30);return r};
 
 /* (la lectura con IA está en a19.js y a20.js) */
 
